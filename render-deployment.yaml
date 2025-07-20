@@ -1,0 +1,149 @@
+# N8N Deployment Configuration for Render
+# Copy this file as 'render.yaml' to your GitHub repository root
+
+services:
+  # PostgreSQL Database - Stores all n8n data
+  - type: pserv
+    name: n8n-database
+    env: node
+    plan: free  # Free tier for testing (upgrade to 'starter' for production)
+    region: oregon
+    databases:
+      - name: n8n_db
+        databaseName: n8n
+        user: n8n_user
+
+  # N8N Web Application
+  - type: web
+    name: n8n-app
+    env: docker
+    plan: free  # Free tier for testing (upgrade to 'starter' for production)  
+    region: oregon
+    
+    # Official n8n Docker image - version 1.102.4 (latest stable)
+    image:
+      url: docker.io/n8nio/n8n:1.102.4
+    
+    # Health check endpoint
+    healthCheckPath: /healthz
+    
+    # Auto-deploy on Git push
+    autoDeploy: true
+    
+    # Environment Variables
+    envVars:
+      # Database Configuration
+      - key: DB_TYPE
+        value: postgresdb
+      
+      # Database connection (auto-populated from database service)
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: n8n-database
+          property: host
+      
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: n8n-database
+          property: port
+      
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: n8n-database
+          property: database
+      
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: n8n-database
+          property: user
+      
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: n8n-database
+          property: password
+      
+      # Network Configuration
+      - key: N8N_PROTOCOL
+        value: https
+      
+      - key: N8N_PORT
+        value: 5678
+      
+      - key: N8N_LISTEN_ADDRESS
+        value: 0.0.0.0
+      
+      # URLs (will be auto-updated with your service URL)
+      - key: WEBHOOK_URL
+        fromService:
+          type: web
+          name: n8n-app
+          property: host
+      
+      - key: N8N_EDITOR_BASE_URL
+        fromService:
+          type: web
+          name: n8n-app
+          property: host
+      
+      # Authentication - YOU NEED TO SET THESE IN RENDER DASHBOARD
+      - key: N8N_BASIC_AUTH_ACTIVE
+        value: true
+      
+      - key: N8N_BASIC_AUTH_USER
+        value: admin
+      
+      # IMPORTANT: Set this in Render dashboard as environment variable
+      - key: N8N_BASIC_AUTH_PASSWORD
+        sync: false  # This will require you to set it manually in Render
+      
+      # IMPORTANT: Set this in Render dashboard as environment variable  
+      - key: N8N_ENCRYPTION_KEY
+        sync: false  # This will require you to set it manually in Render
+      
+      # Execution Configuration
+      - key: EXECUTIONS_PROCESS
+        value: main
+      
+      - key: EXECUTIONS_MODE
+        value: regular
+      
+      - key: EXECUTIONS_DATA_SAVE_ON_ERROR
+        value: all
+      
+      - key: EXECUTIONS_DATA_SAVE_ON_SUCCESS
+        value: all
+      
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: 336  # 14 days
+      
+      # Performance Settings
+      - key: N8N_CONCURRENCY_PRODUCTION
+        value: 10
+      
+      # Features
+      - key: N8N_METRICS
+        value: true
+      
+      - key: N8N_PERSONALIZATION_ENABLED
+        value: true
+      
+      - key: N8N_VERSION_NOTIFICATIONS_ENABLED
+        value: true
+      
+      - key: N8N_DIAGNOSTICS_ENABLED
+        value: false
+      
+      # Log Configuration
+      - key: N8N_LOG_LEVEL
+        value: info
+      
+      - key: N8N_LOG_OUTPUT
+        value: console
+      
+      # AI Features (New in 1.102.4)
+      - key: N8N_AI_ENABLED
+        value: true
+      
+      # Environment
+      - key: NODE_ENV
+        value: production

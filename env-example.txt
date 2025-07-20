@@ -1,0 +1,24 @@
+# Environment Variables for N8N Deployment
+# Copy these values into your Render service environment variables
+
+# REQUIRED: Set these in Render Dashboard
+N8N_BASIC_AUTH_PASSWORD=your-secure-password-here
+N8N_ENCRYPTION_KEY=c88b703fb08cbea894b13acd0c11c0e5b1a3e671e9c5ad2e2a7697a98fcf5d7a
+
+# Optional: AI Service API Keys (if you want to use AI features)
+OPENAI_API_KEY=your-openai-api-key-here
+GOOGLE_AI_API_KEY=your-google-gemini-api-key-here
+
+# Optional: External Service Credentials
+# Add these if you plan to integrate with these services
+GMAIL_CLIENT_ID=your-gmail-oauth-client-id
+GMAIL_CLIENT_SECRET=your-gmail-oauth-client-secret
+SLACK_BOT_TOKEN=your-slack-bot-token
+TWILIO_ACCOUNT_SID=your-twilio-account-sid
+TWILIO_AUTH_TOKEN=your-twilio-auth-token
+
+# Instructions:
+# 1. Generate N8N_ENCRYPTION_KEY with: openssl rand -hex 32
+# 2. Choose a strong password for N8N_BASIC_AUTH_PASSWORD
+# 3. Add these in Render Dashboard → Your Service → Environment
+# 4. AI and external service keys are optional - add only if needed
