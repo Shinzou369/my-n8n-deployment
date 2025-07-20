@@ -7,11 +7,12 @@ databases:
 services:
   - type: web
     name: n8n-app
-    runtime: docker
+    runtime: image
     plan: free
     region: oregon
     
-    dockerfilePath: ./Dockerfile
+    image:
+      url: docker.io/n8nio/n8n:1.102.4
     
     envVars:
       # Database Configuration
