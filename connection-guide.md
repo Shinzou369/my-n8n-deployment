@@ -2,8 +2,8 @@
 
 ## 🎉 SUCCESS! Your N8N Instance is Live
 
-Your n8n automation platform is now running at:
-**https://n8n-app-gvq5.onrender.com/**
+Your n8n automation platform is running at:
+**https://asfga.app.n8n.cloud/**
 
 ## Login Credentials
 
@@ -22,8 +22,8 @@ Your n8n automation platform is now running at:
 ## ETF Dashboard Connection
 
 Your ETF Management Dashboard is configured to connect to:
-- **N8N URL:** https://n8n-app-gvq5.onrender.com
-- **Dashboard URL:** http://localhost:5000 (or your Replit preview)
+- **N8N URL:** https://asfga.app.n8n.cloud
+- **Dashboard URL:** Your Replit preview (port 5000)
 
 ## Features Now Available
 
