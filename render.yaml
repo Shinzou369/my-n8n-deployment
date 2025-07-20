@@ -1,34 +1,23 @@
-services:
-  # PostgreSQL Database - Stores all n8n data
-  - type: pserv
-    name: n8n-database
+databases:
+  - name: n8n-database
     plan: free
-    region: oregon
+    databaseName: n8n
+    user: n8n_user
 
-  # N8N Web Application
+services:
   - type: web
     name: n8n-app
-    env: docker
+    runtime: docker
     plan: free
     region: oregon
     
-    # Official n8n Docker image - version 1.102.4 (latest stable)
-    image:
-      url: docker.io/n8nio/n8n:1.102.4
+    dockerfilePath: ./Dockerfile
     
-    # Health check endpoint
-    healthCheckPath: /healthz
-    
-    # Auto-deploy on Git push
-    autoDeploy: true
-    
-    # Environment Variables
     envVars:
       # Database Configuration
       - key: DB_TYPE
         value: postgresdb
       
-      # Database connection (auto-populated from database service)
       - key: DB_POSTGRESDB_HOST
         fromDatabase:
           name: n8n-database
@@ -77,18 +66,17 @@ services:
           name: n8n-app
           property: host
       
-      # Authentication - YOU NEED TO SET THESE IN RENDER DASHBOARD
+      # Authentication
       - key: N8N_BASIC_AUTH_ACTIVE
         value: true
       
       - key: N8N_BASIC_AUTH_USER
         value: admin
       
-      # IMPORTANT: Set this in Render dashboard as environment variable
+      # Set these manually in Render dashboard
       - key: N8N_BASIC_AUTH_PASSWORD
         sync: false
       
-      # IMPORTANT: Set this in Render dashboard as environment variable  
       - key: N8N_ENCRYPTION_KEY
         sync: false
       
