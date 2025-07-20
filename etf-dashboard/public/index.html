@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF Management Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f6fa;
+            color: #2f3542;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            border-radius: 10px;
+        }
+
+        .header-content {
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            font-weight: 300;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .main-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .action-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+
+        .action-card h3 {
+            color: #667eea;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-card p {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .recent-deployments {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .section-header h2 {
+            color: #2f3542;
+            margin-bottom: 0.5rem;
+        }
+
+        .deployments-list {
+            padding: 1rem 0;
+        }
+
+        .deployment-item {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f1f2f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .deployment-info h4 {
+            color: #2f3542;
+            margin-bottom: 0.25rem;
+        }
+
+        .deployment-info p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 500px;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #2f3542;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .form-group textarea {
+            height: 100px;
+            resize: vertical;
+        }
+
+        .icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+
+        .connection-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <h1>ETF Management Dashboard</h1>
+                <p class="subtitle">Ergovia TaskForce - Internal Business Automation Control Center</p>
+            </div>
+        </header>
+
+        <div class="connection-status" id="connectionStatus">
+            <span id="statusIcon">🔴</span>
+            <span id="statusText">Checking N8N connection...</span>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="templateCount">0</div>
+                <div class="stat-label">Workflow Templates</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="clientCount">0</div>
+                <div class="stat-label">Active Clients</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="deploymentCount">0</div>
+                <div class="stat-label">Live Deployments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="revenueCount">$0</div>
+                <div class="stat-label">Monthly Revenue</div>
+            </div>
+        </div>
+
+        <div class="main-actions">
+            <div class="action-card" onclick="openModal('deployModal')">
+                <h3>
+                    <span class="icon">🚀</span>
+                    Deploy New Workflow
+                </h3>
+                <p>Select a client and template to deploy a customized automation workflow. This is your main money-making action!</p>
+            </div>
+
+            <div class="action-card" onclick="openModal('templateModal')">
+                <h3>
+                    <span class="icon">📋</span>
+                    Manage Templates
+                </h3>
+                <p>Add new ETF templates or modify existing ones. Each template is a reusable workflow for different business verticals.</p>
+            </div>
+
+            <div class="action-card" onclick="openModal('clientModal')">
+                <h3>
+                    <span class="icon">👥</span>
+                    Manage Clients
+                </h3>
+                <p>Add new clients or update existing client information. Keep track of who gets which workflows.</p>
+            </div>
+
+            <div class="action-card" onclick="openModal('settingsModal')">
+                <h3>
+                    <span class="icon">⚙️</span>
+                    N8N Settings
+                </h3>
+                <p>Configure connection to your N8N instance. Make sure the dashboard can communicate with your automation server.</p>
+            </div>
+        </div>
+
+        <div class="recent-deployments">
+            <div class="section-header">
+                <h2>Recent Deployments</h2>
+                <p>Latest workflow deployments for your clients</p>
+            </div>
+            <div class="deployments-list" id="deploymentsList">
+                <div class="deployment-item">
+                    <div class="deployment-info">
+                        <h4>Loading deployments...</h4>
+                        <p>Please wait while we fetch your data</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deploy Workflow Modal -->
+    <div id="deployModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('deployModal')">&times;</span>
+            <h2>Deploy New Workflow</h2>
+            <form id="deployForm">
+                <div class="form-group">
+                    <label for="clientSelect">Select Client:</label>
+                    <select id="clientSelect" required>
+                        <option value="">Choose a client...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="templateSelect">Select Template:</label>
+                    <select id="templateSelect" required>
+                        <option value="">Choose a template...</option>
+                    </select>
+                </div>
+                <div id="configFields"></div>
+                <button type="submit" class="btn">Deploy Workflow</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Template Modal -->
+    <div id="templateModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('templateModal')">&times;</span>
+            <h2>Add New Template</h2>
+            <form id="templateForm">
+                <div class="form-group">
+                    <label for="templateName">Template Name:</label>
+                    <input type="text" id="templateName" placeholder="e.g., Pet Clinic ETF" required>
+                </div>
+                <div class="form-group">
+                    <label for="templateDescription">Description:</label>
+                    <textarea id="templateDescription" placeholder="What does this template automate?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="templateCategory">Category:</label>
+                    <input type="text" id="templateCategory" placeholder="e.g., Healthcare, Real Estate">
+                </div>
+                <div class="form-group">
+                    <label for="n8nWorkflowId">N8N Workflow ID:</label>
+                    <input type="text" id="n8nWorkflowId" placeholder="Get this from your N8N instance" required>
+                </div>
+                <button type="submit" class="btn">Add Template</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Client Modal -->
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('clientModal')">&times;</span>
+            <h2>Add New Client</h2>
+            <form id="clientForm">
+                <div class="form-group">
+                    <label for="clientName">Client Name:</label>
+                    <input type="text" id="clientName" placeholder="e.g., Dr. Smith" required>
+                </div>
+                <div class="form-group">
+                    <label for="clientEmail">Email:</label>
+                    <input type="email" id="clientEmail" placeholder="client@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="clientCompany">Company:</label>
+                    <input type="text" id="clientCompany" placeholder="e.g., Happy Paws Veterinary Clinic">
+                </div>
+                <div class="form-group">
+                    <label for="clientIndustry">Industry:</label>
+                    <input type="text" id="clientIndustry" placeholder="e.g., Healthcare, Real Estate">
+                </div>
+                <button type="submit" class="btn">Add Client</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('settingsModal')">&times;</span>
+            <h2>N8N Connection Settings</h2>
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label for="n8nUrl">N8N Base URL:</label>
+                    <input type="url" id="n8nUrl" placeholder="https://your-n8n-instance.onrender.com" required>
+                </div>
+                <div class="form-group">
+                    <label for="n8nUsername">Username:</label>
+                    <input type="text" id="n8nUsername" value="admin" required>
+                </div>
+                <div class="form-group">
+                    <label for="n8nPassword">Password:</label>
+                    <input type="password" id="n8nPassword" placeholder="Your N8N password" required>
+                </div>
+                <button type="submit" class="btn">Update Settings</button>
+                <button type="button" class="btn btn-secondary" onclick="testConnection()" style="margin-left: 1rem;">Test Connection</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="dashboard.js"></script>
+</body>
+</html>
