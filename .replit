@@ -2,7 +2,7 @@ modules = ["python-3.11", "nodejs-20"]
 
 [nix]
 channel = "stable-24_05"
-packages = ["libyaml", "docker"]
+packages = ["libyaml", "docker", "got"]
 
 [workflows]
 runButton = "Project"
