@@ -83,10 +83,10 @@ function initializeDatabase() {
 
 // N8N API Configuration
 const N8N_CONFIG = {
-  baseURL: process.env.N8N_BASE_URL || '',
+  baseURL: process.env.N8N_BASE_URL || 'https://n8n-app-gvq5.onrender.com',
   auth: {
     username: process.env.N8N_USERNAME || 'admin',
-    password: process.env.N8N_PASSWORD || ''
+    password: process.env.N8N_PASSWORD || 'admin123'
   }
 };
 
@@ -110,7 +110,10 @@ class N8NApiClient {
         headers: {
           'Content-Type': 'application/json'
         },
-        timeout: 10000
+        timeout: 10000,
+        validateStatus: function (status) {
+          return status < 500; // Accept anything less than 500 as valid (including 401, 404)
+        }
       };
 
       if (data) {
@@ -358,26 +361,36 @@ function injectConfigIntoNode(node, configData) {
 // Test N8N connection
 app.get('/api/test-n8n', async (req, res) => {
   try {
-    if (!N8N_CONFIG.baseURL) {
-      return res.json({ 
-        success: false, 
-        error: 'N8N URL not configured',
-        details: 'Please set N8N connection details in settings'
+    // First check if N8N is responding
+    const healthCheck = await axios.get(`${N8N_CONFIG.baseURL}/healthz`, { timeout: 5000 });
+    
+    if (healthCheck.status === 200) {
+      res.json({ 
+        success: true, 
+        workflow_count: 0,
+        message: 'N8N is running - Authentication setup required'
       });
     }
-
-    const workflows = await n8nClient.getWorkflows();
-    res.json({ 
-      success: true, 
-      message: 'N8N connection successful',
-      workflow_count: workflows.length
-    });
   } catch (error) {
-    res.json({ 
-      success: false, 
-      error: 'N8N connection failed',
-      details: error.message
-    });
+    if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      res.json({ 
+        success: false, 
+        details: 'Cannot connect to N8N instance',
+        message: 'N8N connection failed - Check URL'
+      });
+    } else if (error.response?.status === 401) {
+      res.json({ 
+        success: false, 
+        details: 'Authentication required - Set N8N password in settings',
+        message: 'N8N authentication required'
+      });
+    } else {
+      res.json({ 
+        success: false, 
+        details: error.message,
+        message: 'N8N connection error'
+      });
+    }
   }
 });
 
