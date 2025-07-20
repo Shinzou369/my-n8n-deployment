@@ -5,7 +5,6 @@ services:
     env: node
     plan: free
     region: oregon
-    databaseName: n8n
 
   # N8N Web Application
   - type: web
