@@ -36,3 +36,7 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "chmod +x scripts/deploy.sh && ./scripts/deploy.sh --help"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
