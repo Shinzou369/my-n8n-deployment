@@ -4,6 +4,8 @@
 
 This repository provides a comprehensive toolkit for deploying and managing n8n (a workflow automation platform) on Render's cloud hosting platform. The project includes automated deployment scripts, configuration templates, monitoring tools, and detailed documentation to support both simple hobby deployments and production-grade setups.
 
+**Latest Update (July 2025)**: Upgraded to n8n version 1.102.4 with new AI Agent Tools, built-in evaluations, Google Gemini integration, and enhanced security features.
+
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
@@ -28,12 +30,13 @@ The toolkit supports two main deployment approaches:
 
 ### Technology Stack
 
-- **Container Runtime**: Docker with official n8nio/n8n image
+- **Container Runtime**: Docker with official n8nio/n8n:1.102.4 image
 - **Database Options**: PostgreSQL (recommended) or SQLite
 - **Infrastructure**: Render platform services
 - **Configuration**: YAML-based render.yaml blueprints
 - **Monitoring**: Python-based health check tools
 - **API Management**: Custom Render API client for automation
+- **New Features**: AI Agent Tools, Built-in Evaluations, Google Gemini node
 
 ## Key Components
 

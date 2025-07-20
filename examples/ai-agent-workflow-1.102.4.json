@@ -1,0 +1,190 @@
+{
+  "name": "Multi-Agent Customer Support System",
+  "description": "Advanced AI workflow using new 1.102.4 features - AI Agent Tools, Google Gemini, and built-in evaluations",
+  "version": "1.102.4",
+  "new_features_demonstrated": [
+    "AI Agent Tool nodes for multi-agent orchestration",
+    "Google Gemini integration for diverse AI responses",
+    "Built-in evaluation metrics for quality monitoring",
+    "Model Selector for intelligent routing"
+  ],
+  "workflow_structure": {
+    "trigger": {
+      "type": "webhook",
+      "name": "Customer Support Request",
+      "description": "Receives customer inquiries via webhook",
+      "url": "https://your-n8n.onrender.com/webhook/customer-support"
+    },
+    "main_agent": {
+      "type": "AI Agent Node",
+      "name": "Support Supervisor",
+      "description": "Main orchestrating agent that analyzes requests and delegates to specialists",
+      "tools_connected": [
+        "Technical Support Agent Tool",
+        "Billing Agent Tool", 
+        "General Inquiry Agent Tool"
+      ],
+      "prompt": "You are a customer support supervisor. Analyze incoming requests and delegate to the appropriate specialist agent. Always maintain a helpful, professional tone."
+    },
+    "specialist_agents": [
+      {
+        "type": "AI Agent Tool",
+        "name": "Technical Support Agent Tool",
+        "description": "Handles technical issues, bug reports, and feature questions",
+        "connected_models": ["Google Gemini", "OpenAI GPT-4"],
+        "tools": ["Knowledge Base Search", "Bug Report Creator", "Documentation Lookup"],
+        "prompt": "You are a technical support specialist. Help users with technical issues, bugs, and feature questions. Always provide step-by-step solutions and relevant documentation links."
+      },
+      {
+        "type": "AI Agent Tool", 
+        "name": "Billing Agent Tool",
+        "description": "Manages billing inquiries, subscription changes, and payment issues",
+        "connected_models": ["OpenAI GPT-4"],
+        "tools": ["Billing System API", "Payment Processor", "Invoice Generator"],
+        "prompt": "You are a billing specialist. Handle subscription questions, payment issues, and account management. Be precise with financial information and always verify user identity."
+      },
+      {
+        "type": "AI Agent Tool",
+        "name": "General Inquiry Agent Tool", 
+        "description": "Handles general questions, feature requests, and company information",
+        "connected_models": ["Google Gemini"],
+        "tools": ["Company Knowledge Base", "Feature Request System", "FAQ Search"],
+        "prompt": "You are a general support agent. Answer general questions about our company, products, and services. Be friendly and informative."
+      }
+    ],
+    "ai_features": {
+      "model_selector": {
+        "type": "Model Selector Node",
+        "description": "Intelligently routes between Google Gemini and OpenAI based on request type",
+        "routing_logic": {
+          "technical_complex": "OpenAI GPT-4",
+          "creative_general": "Google Gemini", 
+          "billing_precise": "OpenAI GPT-4"
+        }
+      },
+      "evaluation_system": {
+        "type": "Evaluation Node",
+        "metrics": [
+          {
+            "name": "Response Helpfulness",
+            "type": "built-in",
+            "metric": "helpfulness_ai_based",
+            "description": "Evaluates how helpful the AI response is to the customer"
+          },
+          {
+            "name": "Technical Accuracy", 
+            "type": "built-in",
+            "metric": "correctness_ai_based",
+            "description": "Measures technical accuracy of support responses"
+          },
+          {
+            "name": "Tone Appropriateness",
+            "type": "built-in", 
+            "metric": "categorization",
+            "categories": ["Professional", "Friendly", "Empathetic", "Inappropriate"]
+          }
+        ]
+      }
+    },
+    "workflow_steps": [
+      {
+        "step": 1,
+        "action": "Receive customer request",
+        "node": "Webhook Trigger",
+        "description": "Customer submits support request through form or API"
+      },
+      {
+        "step": 2,
+        "action": "Analyze request type",
+        "node": "Support Supervisor (AI Agent)",
+        "description": "Main agent analyzes the request and determines which specialist to involve"
+      },
+      {
+        "step": 3,
+        "action": "Route to specialist",
+        "node": "Model Selector + AI Agent Tool",
+        "description": "Intelligent routing to technical, billing, or general support agent"
+      },
+      {
+        "step": 4,
+        "action": "Generate specialized response",
+        "node": "Specialist AI Agent Tools", 
+        "description": "Specialist agent creates detailed, domain-specific response"
+      },
+      {
+        "step": 5,
+        "action": "Quality evaluation",
+        "node": "Evaluation Node with Built-in Metrics",
+        "description": "Automatically evaluate response quality using AI-based metrics"
+      },
+      {
+        "step": 6,
+        "action": "Send response to customer",
+        "node": "Email/Slack/HTTP Response",
+        "description": "Deliver the response through customer's preferred channel"
+      },
+      {
+        "step": 7,
+        "action": "Log and monitor",
+        "node": "Database + Monitoring",
+        "description": "Store interaction and evaluation results for continuous improvement"
+      }
+    ]
+  },
+  "new_capabilities_showcase": {
+    "multi_agent_orchestration": {
+      "description": "Multiple AI specialists working together under one supervisor",
+      "benefit": "More accurate and specialized responses without complex sub-workflows"
+    },
+    "intelligent_model_routing": {
+      "description": "Automatically choose the best AI model for each type of request",
+      "benefit": "Optimize for performance, cost, and accuracy based on use case"
+    },
+    "built_in_quality_metrics": {
+      "description": "Pre-built evaluation metrics for AI response quality",
+      "benefit": "Easy setup of quality monitoring without custom evaluation workflows"
+    },
+    "google_gemini_integration": {
+      "description": "Direct access to Google's Gemini AI model",
+      "benefit": "More diverse AI capabilities and potential cost optimization"
+    }
+  },
+  "implementation_example": {
+    "webhook_payload": {
+      "customer_id": "12345", 
+      "email": "customer@example.com",
+      "subject": "Can't access my billing dashboard",
+      "message": "I'm trying to update my payment method but the billing page won't load. Getting a 500 error.",
+      "priority": "medium",
+      "category": "billing_technical"
+    },
+    "ai_processing": {
+      "supervisor_analysis": "This is a billing-related technical issue. Route to Technical Support Agent Tool with billing context.",
+      "model_selection": "OpenAI GPT-4 (chosen for billing precision and technical troubleshooting)",
+      "specialist_response": "I understand you're experiencing a 500 error on the billing dashboard. This is a known issue we're addressing. Here's a workaround: [detailed steps]. I've also escalated this to our dev team.",
+      "evaluation_scores": {
+        "helpfulness": 8.5,
+        "technical_accuracy": 9.0,
+        "tone": "Professional"
+      }
+    }
+  },
+  "deployment_benefits": {
+    "improved_accuracy": "Specialized agents provide more accurate domain-specific responses",
+    "better_scalability": "Multi-agent system handles diverse requests efficiently", 
+    "quality_assurance": "Built-in evaluations ensure consistent response quality",
+    "cost_optimization": "Intelligent model routing optimizes AI usage costs",
+    "easier_debugging": "Single canvas execution makes troubleshooting simpler"
+  },
+  "getting_started": {
+    "requirements": [
+      "n8n 1.102.4 deployed on Render",
+      "API keys for OpenAI and Google Gemini",
+      "Webhook endpoint configured",
+      "Knowledge base or documentation accessible via API"
+    ],
+    "setup_time": "30-45 minutes for basic version",
+    "complexity": "Intermediate (requires AI model configuration)",
+    "recommended_for": "Teams handling diverse customer support requests"
+  }
+}

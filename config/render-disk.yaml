@@ -14,7 +14,7 @@ services:
     # Use official n8n Docker image
     # Pin to specific version for production stability
     image:
-      url: docker.io/n8nio/n8n:1.54.0  # Update to latest stable version as needed
+      url: docker.io/n8nio/n8n:1.102.4  # Latest stable version as of July 2025
     
     # Health check endpoint for monitoring
     healthCheckPath: /healthz

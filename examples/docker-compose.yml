@@ -27,7 +27,7 @@ services:
 
   # n8n Application (PostgreSQL version)
   n8n-postgres:
-    image: n8nio/n8n:1.54.0
+    image: n8nio/n8n:1.102.4
     container_name: n8n-postgres
     restart: unless-stopped
     depends_on:
@@ -97,7 +97,7 @@ services:
 
   # n8n Application (SQLite version)
   n8n-sqlite:
-    image: n8nio/n8n:1.54.0
+    image: n8nio/n8n:1.102.4
     container_name: n8n-sqlite
     restart: unless-stopped
     environment:
