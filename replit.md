@@ -10,6 +10,17 @@ This repository provides a comprehensive toolkit for deploying and managing n8n 
 
 Preferred communication style: Simple, everyday language.
 
+## Business Vision
+
+**Ergovia TaskForce (ETF) Management Dashboard**: User plans to build an internal backend office for managing their n8n workflow automation business. The dashboard will:
+
+1. **Template Management**: Manage pre-built n8n workflow templates ("Niche Agents") for different business verticals (Pet Clinic, Real Estate, etc.)
+2. **Client Management**: Track and manage clients who receive customized workflow deployments
+3. **Automated Deployment**: Core feature - automate the process of duplicating master templates, injecting client-specific data, and deploying customized workflows via n8n API
+4. **Self-Service Control**: Eliminate dependency on n8n web interface for workflow management and client onboarding
+
+**Business Model**: Each client gets their own customized copy of a template, running on user's server. This dashboard automates the manual, error-prone process of client onboarding and workflow customization.
+
 ## System Architecture
 
 ### Primary Deployment Strategies
