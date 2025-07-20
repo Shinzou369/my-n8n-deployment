@@ -2,7 +2,6 @@ services:
   # PostgreSQL Database - Stores all n8n data
   - type: pserv
     name: n8n-database
-    env: node
     plan: free
     region: oregon
 
