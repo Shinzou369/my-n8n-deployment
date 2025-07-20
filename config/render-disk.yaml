@@ -1,0 +1,239 @@
+# Render Blueprint for n8n with Persistent Disk Storage
+# This configuration uses SQLite with persistent disk for simpler deployment
+# Last updated: 2024-07-20
+# NOTE: Requires paid Render plan (Starter minimum) for persistent disk support
+
+services:
+  # n8n Web Application Service with Persistent Disk
+  - type: web
+    name: n8n-app-disk
+    env: docker
+    plan: starter  # REQUIRED: Free tier doesn't support persistent disks
+    region: oregon  # Choose region closest to your users
+    
+    # Use official n8n Docker image
+    # Pin to specific version for production stability
+    image:
+      url: docker.io/n8nio/n8n:1.54.0  # Update to latest stable version as needed
+    
+    # Health check endpoint for monitoring
+    healthCheckPath: /healthz
+    
+    # Auto-deploy on Git push
+    autoDeploy: true
+    
+    # === PERSISTENT DISK CONFIGURATION ===
+    # This disk will store the SQLite database and all n8n data
+    disk:
+      name: n8n-data-disk
+      mountPath: /home/node/.n8n  # n8n's default data directory
+      sizeGB: 1  # Start with 1GB, increase as needed ($1/month per GB)
+    
+    # Environment Variables Configuration
+    envVars:
+      # === DATABASE CONFIGURATION ===
+      # Use SQLite (default) with persistent storage
+      # DB_TYPE defaults to SQLite when not specified
+      
+      # Specify SQLite database location on persistent disk
+      - key: DB_SQLITE_DATABASE
+        value: /home/node/.n8n/database.sqlite
+      
+      # === CORE N8N CONFIGURATION ===
+      # Base URLs for n8n interface and webhooks
+      # IMPORTANT: Replace 'n8n-app-disk' with your actual service name
+      - key: WEBHOOK_URL
+        value: https://n8n-app-disk.onrender.com
+      
+      - key: N8N_EDITOR_BASE_URL
+        value: https://n8n-app-disk.onrender.com
+      
+      # Network configuration
+      - key: N8N_PROTOCOL
+        value: https
+      
+      - key: N8N_PORT
+        value: "5000"
+      
+      - key: N8N_LISTEN_ADDRESS
+        value: 0.0.0.0
+      
+      # Data directory on persistent disk
+      - key: N8N_USER_FOLDER
+        value: /home/node/.n8n
+      
+      # === SECURITY CONFIGURATION ===
+      # Enable basic authentication (recommended for production)
+      - key: N8N_BASIC_AUTH_ACTIVE
+        value: "true"
+      
+      # Set authentication credentials
+      # SECURITY NOTE: Set these values in Render dashboard, not in this file
+      - key: N8N_BASIC_AUTH_USER
+        sync: false  # This prevents the value from being synced from this file
+        # Set in Render dashboard: recommended value 'admin' or custom username
+      
+      - key: N8N_BASIC_AUTH_PASSWORD
+        sync: false  # This prevents the value from being synced from this file
+        # Set in Render dashboard: use a strong password (16+ characters)
+      
+      # Encryption key for credentials and sensitive data
+      # CRITICAL: This must be exactly 32 characters (64 hex characters)
+      # Generate with: openssl rand -hex 32
+      - key: N8N_ENCRYPTION_KEY
+        sync: false  # This prevents the value from being synced from this file
+        # Set in Render dashboard: generate with openssl rand -hex 32
+      
+      # === EXECUTION CONFIGURATION ===
+      # Execution process mode (main = lower memory usage, recommended)
+      - key: EXECUTIONS_PROCESS
+        value: main
+      
+      # Execution mode for production
+      - key: EXECUTIONS_MODE
+        value: regular
+      
+      # Save execution data for debugging and monitoring
+      - key: EXECUTIONS_DATA_SAVE_ON_ERROR
+        value: all
+      
+      - key: EXECUTIONS_DATA_SAVE_ON_SUCCESS
+        value: all
+      
+      # Execution timeout settings (in seconds)
+      - key: EXECUTIONS_TIMEOUT
+        value: "1200"  # 20 minutes default timeout
+      
+      - key: EXECUTIONS_TIMEOUT_MAX
+        value: "3600"  # 1 hour maximum timeout
+      
+      # Concurrent execution limits (adjust based on your plan)
+      - key: N8N_CONCURRENCY_PRODUCTION
+        value: "3"  # Lower for disk-based deployment
+      
+      # === DATA MANAGEMENT ===
+      # Optional: Enable automatic cleanup of old execution data
+      # This is more important for disk-based storage to manage space
+      - key: EXECUTIONS_DATA_PRUNE
+        value: "true"
+      
+      - key: EXECUTIONS_DATA_MAX_AGE
+        value: "168"  # Keep execution data for 7 days
+      
+      # SQLite-specific optimizations
+      - key: DB_SQLITE_VACUUM_ON_STARTUP
+        value: "true"  # Optimize database on startup
+      
+      # === LOGGING CONFIGURATION ===
+      # Log level (info for production, debug for troubleshooting)
+      - key: N8N_LOG_LEVEL
+        value: info
+      
+      # Log output format
+      - key: N8N_LOG_OUTPUT
+        value: console
+      
+      # === PERFORMANCE CONFIGURATION ===
+      # SQLite performance settings
+      - key: DB_SQLITE_ENABLE_WAL
+        value: "true"  # Enable Write-Ahead Logging for better performance
+      
+      # Node.js memory settings (conservative for disk-based deployment)
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=512"  # 512MB memory limit
+      
+      # === OPTIONAL FEATURES ===
+      # Enable metrics collection (useful for monitoring)
+      - key: N8N_METRICS
+        value: "true"
+      
+      # Metrics prefix for identification
+      - key: N8N_METRICS_PREFIX
+        value: n8n_disk_
+      
+      # === WEBHOOK CONFIGURATION ===
+      # Prevent webhook deregistration on shutdown
+      - key: N8N_SKIP_WEBHOOK_DEREGISTRATION_SHUTDOWN
+        value: "true"
+      
+      # === EDITOR CONFIGURATION ===
+      # Personalization survey (disable for production)
+      - key: N8N_PERSONALIZATION_ENABLED
+        value: "false"
+      
+      # Version notifications
+      - key: N8N_VERSION_NOTIFICATIONS_ENABLED
+        value: "false"
+      
+      # Diagnostics (disable for privacy in production)
+      - key: N8N_DIAGNOSTICS_ENABLED
+        value: "false"
+      
+      # === ENVIRONMENT IDENTIFICATION ===
+      - key: NODE_ENV
+        value: production
+      
+      # === DISK STORAGE OPTIMIZATION ===
+      # Disable file watching for better disk performance
+      - key: N8N_DISABLE_PRODUCTION_MAIN_PROCESS
+        value: "false"
+      
+      # === BACKUP RECOMMENDATIONS ===
+      # These are informational - implement external backup processes
+      # Backup the entire /home/node/.n8n directory regularly
+      # Important files to backup:
+      # - database.sqlite (main database)
+      # - config.json (configuration)
+      # - nodes/ (custom nodes if any)
+
+# Blueprint metadata
+previewsEnabled: false
+
+# Regional deployment
+region: oregon
+
+# Build configuration for disk-based deployment
+buildCommand: |
+  echo "Setting up n8n disk-based deployment..."
+  echo "Persistent disk will be mounted at /home/node/.n8n"
+  echo "Database file: /home/node/.n8n/database.sqlite"
+
+# Health check configuration
+startCommand: |
+  # Ensure data directory exists and has correct permissions
+  mkdir -p /home/node/.n8n
+  chown -R node:node /home/node/.n8n || true
+  # Start n8n
+  n8n start
+
+# === IMPORTANT NOTES FOR DISK-BASED DEPLOYMENT ===
+#
+# 1. BACKUP STRATEGY:
+#    - Regularly backup the entire /home/node/.n8n directory
+#    - Consider automated backup scripts using Render cron jobs
+#    - Store backups in external services (S3, Google Drive, etc.)
+#
+# 2. DISK SPACE MONITORING:
+#    - Monitor disk usage regularly
+#    - Enable execution data pruning to manage space
+#    - Plan for disk size increases as data grows
+#
+# 3. PERFORMANCE CONSIDERATIONS:
+#    - SQLite performs well for most use cases
+#    - For high-concurrency needs, consider PostgreSQL deployment
+#    - Disk I/O can be slower than database queries
+#
+# 4. MAINTENANCE:
+#    - Service will have downtime during deployments
+#    - Database files are locked during service restart
+#    - Plan maintenance windows accordingly
+#
+# 5. SCALING LIMITATIONS:
+#    - Single instance only (cannot horizontally scale)
+#    - Shared disk access not supported
+#    - For multiple instances, use PostgreSQL deployment
+#
+# 6. COST OPTIMIZATION:
+#    - Start with 1GB disk and monitor usage
+#    - Disk costs scale linearly ($1/GB/month)
+#    - Regular cleanup reduces storage needs

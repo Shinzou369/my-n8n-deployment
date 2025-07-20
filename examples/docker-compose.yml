@@ -1,0 +1,377 @@
+# Docker Compose file for local n8n development and testing
+# This file helps you run n8n locally with the same configuration as Render
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database (similar to Render Postgres service)
+  n8n-database:
+    image: postgres:15-alpine
+    container_name: n8n-database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: n8n
+      POSTGRES_USER: n8n_user
+      POSTGRES_PASSWORD: n8n_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - n8n-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U n8n_user -d n8n"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # n8n Application (PostgreSQL version)
+  n8n-postgres:
+    image: n8nio/n8n:1.54.0
+    container_name: n8n-postgres
+    restart: unless-stopped
+    depends_on:
+      n8n-database:
+        condition: service_healthy
+    environment:
+      # Database Configuration
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n-database
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n_user
+      DB_POSTGRESDB_PASSWORD: n8n_password
+      DB_POSTGRESDB_POOL_SIZE: 10
+      
+      # Network Configuration
+      N8N_PROTOCOL: http
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_LISTEN_ADDRESS: 0.0.0.0
+      
+      # Base URLs
+      WEBHOOK_URL: http://localhost:5678
+      N8N_EDITOR_BASE_URL: http://localhost:5678
+      
+      # Authentication
+      N8N_BASIC_AUTH_ACTIVE: true
+      N8N_BASIC_AUTH_USER: admin
+      N8N_BASIC_AUTH_PASSWORD: password123
+      
+      # Encryption (32 bytes in hex = 64 characters)
+      N8N_ENCRYPTION_KEY: c88b703fb08cbea894b13acd0c11c0e5b1a3e671e9c5ad2e2a7697a98fcf5d7a
+      
+      # Execution Configuration
+      EXECUTIONS_PROCESS: main
+      EXECUTIONS_MODE: regular
+      EXECUTIONS_DATA_SAVE_ON_ERROR: all
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: all
+      EXECUTIONS_TIMEOUT: 3600
+      N8N_CONCURRENCY_PRODUCTION: 5
+      
+      # Logging
+      N8N_LOG_LEVEL: info
+      N8N_LOG_OUTPUT: console
+      
+      # Features
+      N8N_METRICS: true
+      N8N_PERSONALIZATION_ENABLED: false
+      N8N_VERSION_NOTIFICATIONS_ENABLED: false
+      N8N_DIAGNOSTICS_ENABLED: false
+      
+      # Environment
+      NODE_ENV: development
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - n8n-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - postgres
+
+  # n8n Application (SQLite version)
+  n8n-sqlite:
+    image: n8nio/n8n:1.54.0
+    container_name: n8n-sqlite
+    restart: unless-stopped
+    environment:
+      # Database Configuration (SQLite is default)
+      DB_SQLITE_DATABASE: /home/node/.n8n/database.sqlite
+      DB_SQLITE_VACUUM_ON_STARTUP: true
+      DB_SQLITE_ENABLE_WAL: true
+      
+      # Network Configuration
+      N8N_PROTOCOL: http
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_LISTEN_ADDRESS: 0.0.0.0
+      
+      # Base URLs
+      WEBHOOK_URL: http://localhost:5678
+      N8N_EDITOR_BASE_URL: http://localhost:5678
+      
+      # Authentication
+      N8N_BASIC_AUTH_ACTIVE: true
+      N8N_BASIC_AUTH_USER: admin
+      N8N_BASIC_AUTH_PASSWORD: password123
+      
+      # Encryption (32 bytes in hex = 64 characters)
+      N8N_ENCRYPTION_KEY: c88b703fb08cbea894b13acd0c11c0e5b1a3e671e9c5ad2e2a7697a98fcf5d7a
+      
+      # Execution Configuration
+      EXECUTIONS_PROCESS: main
+      EXECUTIONS_MODE: regular
+      EXECUTIONS_DATA_SAVE_ON_ERROR: all
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: all
+      EXECUTIONS_TIMEOUT: 3600
+      N8N_CONCURRENCY_PRODUCTION: 3
+      
+      # Data Management
+      EXECUTIONS_DATA_PRUNE: true
+      EXECUTIONS_DATA_MAX_AGE: 168
+      
+      # Logging
+      N8N_LOG_LEVEL: info
+      N8N_LOG_OUTPUT: console
+      
+      # Features
+      N8N_METRICS: true
+      N8N_PERSONALIZATION_ENABLED: false
+      N8N_VERSION_NOTIFICATIONS_ENABLED: false
+      N8N_DIAGNOSTICS_ENABLED: false
+      
+      # Environment
+      NODE_ENV: development
+    ports:
+      - "5679:5678"  # Different port to avoid conflicts
+    volumes:
+      - n8n_sqlite_data:/home/node/.n8n
+    networks:
+      - n8n-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    profiles:
+      - sqlite
+
+  # Custom n8n with additional features
+  n8n-custom:
+    build:
+      context: ../
+      dockerfile: config/Dockerfile
+    container_name: n8n-custom
+    restart: unless-stopped
+    depends_on:
+      n8n-database:
+        condition: service_healthy
+    environment:
+      # Same as postgres configuration but with custom build
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n-database
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: n8n_user
+      DB_POSTGRESDB_PASSWORD: n8n_password
+      
+      N8N_PROTOCOL: http
+      N8N_HOST: localhost
+      N8N_PORT: 5678
+      N8N_LISTEN_ADDRESS: 0.0.0.0
+      
+      WEBHOOK_URL: http://localhost:5680
+      N8N_EDITOR_BASE_URL: http://localhost:5680
+      
+      N8N_BASIC_AUTH_ACTIVE: true
+      N8N_BASIC_AUTH_USER: admin
+      N8N_BASIC_AUTH_PASSWORD: password123
+      
+      N8N_ENCRYPTION_KEY: c88b703fb08cbea894b13acd0c11c0e5b1a3e671e9c5ad2e2a7697a98fcf5d7a
+      
+      EXECUTIONS_PROCESS: main
+      EXECUTIONS_MODE: regular
+      N8N_LOG_LEVEL: debug
+      NODE_ENV: development
+    ports:
+      - "5680:5678"
+    volumes:
+      - n8n_custom_data:/home/node/.n8n
+      - ../custom-nodes:/home/node/.n8n/custom  # Mount custom nodes
+    networks:
+      - n8n-network
+    profiles:
+      - custom
+
+  # Redis (for future scaling and caching)
+  redis:
+    image: redis:7-alpine
+    container_name: n8n-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - n8n-network
+    profiles:
+      - redis
+
+  # Webhook testing service
+  webhook-tester:
+    image: tarampampam/webhook-tester:latest
+    container_name: webhook-tester
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - n8n-network
+    profiles:
+      - testing
+
+  # Health monitoring
+  health-monitor:
+    build:
+      context: ../
+      dockerfile: Dockerfile.monitor
+    container_name: n8n-health-monitor
+    restart: unless-stopped
+    environment:
+      MONITOR_TARGETS: >
+        http://n8n-postgres:5678/healthz,
+        http://n8n-sqlite:5678/healthz,
+        http://n8n-custom:5678/healthz
+      MONITOR_INTERVAL: 30
+      ALERT_EMAIL_ENABLED: false
+    volumes:
+      - ./monitor-config.json:/app/config.json
+      - monitor_data:/app/data
+    networks:
+      - n8n-network
+    profiles:
+      - monitoring
+
+volumes:
+  postgres_data:
+    driver: local
+    name: n8n_postgres_data
+  
+  n8n_data:
+    driver: local
+    name: n8n_app_data
+  
+  n8n_sqlite_data:
+    driver: local
+    name: n8n_sqlite_data
+  
+  n8n_custom_data:
+    driver: local
+    name: n8n_custom_data
+  
+  redis_data:
+    driver: local
+    name: n8n_redis_data
+  
+  monitor_data:
+    driver: local
+    name: n8n_monitor_data
+
+networks:
+  n8n-network:
+    driver: bridge
+    name: n8n_network
+
+# =====================================
+# USAGE INSTRUCTIONS
+# =====================================
+
+# Start PostgreSQL-based n8n:
+# docker-compose --profile postgres up -d
+
+# Start SQLite-based n8n:
+# docker-compose --profile sqlite up -d
+
+# Start custom n8n build:
+# docker-compose --profile custom up -d
+
+# Start with monitoring:
+# docker-compose --profile postgres --profile monitoring up -d
+
+# Start with testing tools:
+# docker-compose --profile postgres --profile testing up -d
+
+# View logs:
+# docker-compose logs -f n8n-postgres
+
+# Stop all services:
+# docker-compose down
+
+# Remove all data (careful!):
+# docker-compose down -v
+
+# =====================================
+# DEVELOPMENT WORKFLOW
+# =====================================
+
+# 1. Start the environment:
+#    docker-compose --profile postgres up -d
+
+# 2. Access n8n at:
+#    http://localhost:5678
+#    Username: admin
+#    Password: password123
+
+# 3. Access PostgreSQL directly:
+#    docker exec -it n8n-database psql -U n8n_user -d n8n
+
+# 4. View service status:
+#    docker-compose ps
+
+# 5. Test webhooks:
+#    Use webhook-tester at http://localhost:8080
+
+# =====================================
+# TROUBLESHOOTING
+# =====================================
+
+# Check service health:
+# docker-compose ps
+# docker-compose logs [service-name]
+
+# Reset database:
+# docker-compose down
+# docker volume rm n8n_postgres_data
+# docker-compose --profile postgres up -d
+
+# Access container shell:
+# docker exec -it n8n-postgres sh
+
+# Check network connectivity:
+# docker network inspect n8n_network
+
+# Monitor resource usage:
+# docker stats
+
+# =====================================
+# PRODUCTION DEPLOYMENT SIMULATION
+# =====================================
+
+# This compose file simulates Render's environment:
+# - Same n8n version and configuration
+# - PostgreSQL database setup
+# - Environment variables matching Render deployment
+# - Health checks and monitoring
+# - Network isolation
+
+# Key differences from Render:
+# - Uses HTTP instead of HTTPS locally
+# - Different resource constraints
+# - No automatic scaling
+# - Local file system instead of cloud storage
+

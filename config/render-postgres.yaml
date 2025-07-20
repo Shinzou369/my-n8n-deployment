@@ -1,0 +1,211 @@
+# Render Blueprint for n8n with PostgreSQL Database
+# This configuration creates a production-ready n8n deployment with database persistence
+# Last updated: 2024-07-20
+
+services:
+  # PostgreSQL Database Service
+  # Stores all n8n data including workflows, executions, and credentials
+  - type: pserv
+    name: n8n-database
+    env: node
+    plan: starter  # Change to 'free' for development, 'starter' recommended for production
+    region: oregon  # Choose region closest to your users
+    databases:
+      - name: n8n_db
+        databaseName: n8n
+        user: n8n_user
+    # Database will automatically get SSL/TLS encryption
+    
+  # n8n Web Application Service
+  # Main automation platform interface and execution engine
+  - type: web
+    name: n8n-app
+    env: docker
+    plan: starter  # Change to 'free' for development, 'starter' recommended for production
+    region: oregon  # Should match database region for optimal performance
+    
+    # Use official n8n Docker image
+    # Pin to specific version for production stability
+    image:
+      url: docker.io/n8nio/n8n:1.54.0  # Update to latest stable version as needed
+    
+    # Health check endpoint for monitoring
+    healthCheckPath: /healthz
+    
+    # Auto-deploy on Git push (useful for custom configurations)
+    autoDeploy: true
+    
+    # Environment Variables Configuration
+    envVars:
+      # === DATABASE CONFIGURATION ===
+      # Configure n8n to use PostgreSQL instead of SQLite
+      - key: DB_TYPE
+        value: postgresdb
+      
+      # Database connection details (automatically populated from database service)
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: n8n-database
+          property: host
+      
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: n8n-database
+          property: port
+      
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: n8n-database
+          property: database
+      
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: n8n-database
+          property: user
+      
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: n8n-database
+          property: password
+      
+      # Database connection pooling (optional optimization)
+      - key: DB_POSTGRESDB_POOL_SIZE
+        value: "10"
+      
+      # === CORE N8N CONFIGURATION ===
+      # Base URLs for n8n interface and webhooks
+      # IMPORTANT: Replace 'n8n-app' with your actual service name
+      - key: WEBHOOK_URL
+        value: https://n8n-app.onrender.com
+      
+      - key: N8N_EDITOR_BASE_URL
+        value: https://n8n-app.onrender.com
+      
+      # Network configuration
+      - key: N8N_PROTOCOL
+        value: https
+      
+      - key: N8N_PORT
+        value: "5000"
+      
+      - key: N8N_LISTEN_ADDRESS
+        value: 0.0.0.0
+      
+      # === SECURITY CONFIGURATION ===
+      # Enable basic authentication (recommended for production)
+      - key: N8N_BASIC_AUTH_ACTIVE
+        value: "true"
+      
+      # Set authentication credentials
+      # SECURITY NOTE: Set these values in Render dashboard, not in this file
+      - key: N8N_BASIC_AUTH_USER
+        sync: false  # This prevents the value from being synced from this file
+        # Set in Render dashboard: recommended value 'admin' or custom username
+      
+      - key: N8N_BASIC_AUTH_PASSWORD
+        sync: false  # This prevents the value from being synced from this file
+        # Set in Render dashboard: use a strong password (16+ characters)
+      
+      # Encryption key for credentials and sensitive data
+      # CRITICAL: This must be exactly 32 characters (64 hex characters)
+      # Generate with: openssl rand -hex 32
+      - key: N8N_ENCRYPTION_KEY
+        sync: false  # This prevents the value from being synced from this file
+        # Set in Render dashboard: generate with openssl rand -hex 32
+      
+      # === EXECUTION CONFIGURATION ===
+      # Execution process mode (main = lower memory usage, recommended)
+      - key: EXECUTIONS_PROCESS
+        value: main
+      
+      # Execution mode for production
+      - key: EXECUTIONS_MODE
+        value: regular
+      
+      # Save execution data for debugging and monitoring
+      - key: EXECUTIONS_DATA_SAVE_ON_ERROR
+        value: all
+      
+      - key: EXECUTIONS_DATA_SAVE_ON_SUCCESS
+        value: all
+      
+      # Execution timeout settings (in seconds)
+      - key: EXECUTIONS_TIMEOUT
+        value: "1200"  # 20 minutes default timeout
+      
+      - key: EXECUTIONS_TIMEOUT_MAX
+        value: "3600"  # 1 hour maximum timeout
+      
+      # Concurrent execution limits (adjust based on your plan)
+      - key: N8N_CONCURRENCY_PRODUCTION
+        value: "5"  # Start conservative, increase based on performance
+      
+      # === DATA MANAGEMENT ===
+      # Optional: Enable automatic cleanup of old execution data
+      # Uncomment these lines to enable automatic cleanup
+      # - key: EXECUTIONS_DATA_PRUNE
+      #   value: "true"
+      # 
+      # - key: EXECUTIONS_DATA_MAX_AGE
+      #   value: "168"  # Keep execution data for 7 days
+      
+      # === LOGGING CONFIGURATION ===
+      # Log level (info for production, debug for troubleshooting)
+      - key: N8N_LOG_LEVEL
+        value: info
+      
+      # Log output format
+      - key: N8N_LOG_OUTPUT
+        value: console
+      
+      # === OPTIONAL FEATURES ===
+      # Enable metrics collection (useful for monitoring)
+      - key: N8N_METRICS
+        value: "true"
+      
+      # Metrics prefix for identification
+      - key: N8N_METRICS_PREFIX
+        value: n8n_
+      
+      # Enable CORS for external integrations (use with caution)
+      # - key: N8N_CORS_ORIGIN
+      #   value: "*"
+      
+      # === WEBHOOK CONFIGURATION ===
+      # Prevent webhook deregistration on shutdown
+      - key: N8N_SKIP_WEBHOOK_DEREGISTRATION_SHUTDOWN
+        value: "true"
+      
+      # === EDITOR CONFIGURATION ===
+      # Personalization survey (disable for production)
+      - key: N8N_PERSONALIZATION_ENABLED
+        value: "false"
+      
+      # Version notifications
+      - key: N8N_VERSION_NOTIFICATIONS_ENABLED
+        value: "false"
+      
+      # Diagnostics (disable for privacy in production)
+      - key: N8N_DIAGNOSTICS_ENABLED
+        value: "false"
+      
+      # === PERFORMANCE TUNING ===
+      # Node.js memory settings (adjust based on your plan)
+      - key: NODE_OPTIONS
+        value: "--max-old-space-size=1024"  # 1GB memory limit
+      
+      # === ENVIRONMENT IDENTIFICATION ===
+      - key: NODE_ENV
+        value: production
+
+# Blueprint metadata
+previewsEnabled: false
+
+# Regional deployment for better performance
+region: oregon
+
+# Optional: Custom build script
+# buildCommand: echo "No build required for official n8n image"
+
+# Optional: Custom start command
+# startCommand: n8n start

@@ -1,0 +1,38 @@
+modules = ["python-3.11"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["libyaml"]
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "n8n-toolkit-demo"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "test-deployment-script"
+
+[[workflows.workflow]]
+name = "n8n-toolkit-demo"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 -m http.server 5000"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "test-deployment-script"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "chmod +x scripts/deploy.sh && ./scripts/deploy.sh --help"
