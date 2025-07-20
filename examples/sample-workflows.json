@@ -1,0 +1,202 @@
+[
+  {
+    "name": "Welcome Email for New Customers",
+    "description": "Automatically send a welcome email when someone signs up",
+    "workflow": {
+      "trigger": {
+        "type": "webhook",
+        "url": "https://your-n8n.onrender.com/webhook/new-customer",
+        "description": "Your website calls this URL when someone signs up"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "action": "Get customer data",
+          "details": "Extract name, email, signup date from the webhook"
+        },
+        {
+          "step": 2,
+          "action": "Personalize email template",
+          "details": "Insert customer name and custom welcome message"
+        },
+        {
+          "step": 3,
+          "action": "Send email via Gmail",
+          "details": "Send welcome email with your company branding"
+        },
+        {
+          "step": 4,
+          "action": "Add to CRM",
+          "details": "Create new contact in your customer database"
+        }
+      ],
+      "estimated_time": "Runs instantly when triggered",
+      "business_value": "Never miss welcoming a new customer"
+    }
+  },
+  {
+    "name": "Daily Sales Report",
+    "description": "Send daily sales summary to your team",
+    "workflow": {
+      "trigger": {
+        "type": "schedule",
+        "schedule": "Every day at 8:00 AM",
+        "description": "Automatically runs every morning"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "action": "Connect to sales database",
+          "details": "Get yesterday's sales data from your system"
+        },
+        {
+          "step": 2,
+          "action": "Calculate totals",
+          "details": "Sum revenue, count orders, identify top products"
+        },
+        {
+          "step": 3,
+          "action": "Create formatted report",
+          "details": "Build nice-looking table with charts"
+        },
+        {
+          "step": 4,
+          "action": "Send to Slack channel",
+          "details": "Post report to #sales-team channel"
+        },
+        {
+          "step": 5,
+          "action": "Email to managers",
+          "details": "Send detailed report to management team"
+        }
+      ],
+      "estimated_time": "2-3 minutes to complete",
+      "business_value": "Keep everyone informed without manual work"
+    }
+  },
+  {
+    "name": "Social Media Auto-Post",
+    "description": "Share new blog posts across all social platforms",
+    "workflow": {
+      "trigger": {
+        "type": "rss_feed",
+        "source": "Your blog RSS feed",
+        "description": "Monitors your blog for new posts"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "action": "Detect new blog post",
+          "details": "Check RSS feed every 15 minutes for new content"
+        },
+        {
+          "step": 2,
+          "action": "Extract post details",
+          "details": "Get title, summary, featured image, and link"
+        },
+        {
+          "step": 3,
+          "action": "Create social media versions",
+          "details": "Adapt content for Twitter, LinkedIn, Facebook formats"
+        },
+        {
+          "step": 4,
+          "action": "Post to Twitter",
+          "details": "Share with relevant hashtags and shortened link"
+        },
+        {
+          "step": 5,
+          "action": "Post to LinkedIn",
+          "details": "Professional version with company page mention"
+        },
+        {
+          "step": 6,
+          "action": "Schedule Facebook post",
+          "details": "Queue for optimal posting time"
+        }
+      ],
+      "estimated_time": "Runs within 15 minutes of publishing",
+      "business_value": "Maximize reach without manual posting"
+    }
+  },
+  {
+    "name": "Customer Support Ticket Automation",
+    "description": "Automatically process and route support emails",
+    "workflow": {
+      "trigger": {
+        "type": "email",
+        "mailbox": "support@yourcompany.com",
+        "description": "Monitors support email inbox"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "action": "Analyze email content",
+          "details": "Use AI to categorize: Bug, Feature Request, or General Question"
+        },
+        {
+          "step": 2,
+          "action": "Create support ticket",
+          "details": "Add to your helpdesk system with proper category"
+        },
+        {
+          "step": 3,
+          "action": "Send auto-reply",
+          "details": "Acknowledge receipt and provide ticket number"
+        },
+        {
+          "step": 4,
+          "action": "Route to right team",
+          "details": "Assign to developer, product manager, or support agent"
+        },
+        {
+          "step": 5,
+          "action": "Notify team in Slack",
+          "details": "Alert assigned team with ticket details"
+        }
+      ],
+      "estimated_time": "Processes immediately upon email receipt",
+      "business_value": "Faster response times and better organization"
+    }
+  },
+  {
+    "name": "Inventory Low Stock Alert",
+    "description": "Monitor inventory and alert when items are running low",
+    "workflow": {
+      "trigger": {
+        "type": "schedule",
+        "schedule": "Every 2 hours during business hours",
+        "description": "Regularly checks inventory levels"
+      },
+      "steps": [
+        {
+          "step": 1,
+          "action": "Query inventory database",
+          "details": "Get current stock levels for all products"
+        },
+        {
+          "step": 2,
+          "action": "Check against minimum thresholds",
+          "details": "Compare with predefined low-stock warnings"
+        },
+        {
+          "step": 3,
+          "action": "Generate alert list",
+          "details": "Create list of items below minimum stock"
+        },
+        {
+          "step": 4,
+          "action": "Send urgent alerts",
+          "details": "Email purchasing team with critical low-stock items"
+        },
+        {
+          "step": 5,
+          "action": "Update dashboard",
+          "details": "Post summary to inventory management Slack channel"
+        }
+      ],
+      "estimated_time": "1-2 minutes to complete check",
+      "business_value": "Prevent stockouts and lost sales"
+    }
+  }
+]
