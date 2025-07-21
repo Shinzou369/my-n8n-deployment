@@ -9,7 +9,7 @@ This repository provides a comprehensive toolkit for deploying and managing n8n 
 - ✅ Dashboard connects to existing n8n cloud at https://asfga.app.n8n.cloud/
 - ✅ Template management, client tracking, and automated workflow deployment via n8n API
 - ✅ Dashboard running on Replit with SQLite database for business management
-- ✅ Identified webhook URL issue: nodes pointing to Render instance instead of n8n cloud
+- ✅ Identified webhook URL issue: workflow copied from different instance, needs fresh Telegram Trigger node
 - ✅ Ready for scaling workflow automation business with self-service client management
 
 ## User Preferences
