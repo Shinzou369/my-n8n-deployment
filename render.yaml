@@ -58,13 +58,13 @@ services:
       - key: WEBHOOK_URL
         fromService:
           type: web
-          name: n8n-app
+          name: n8n-app-gvq5
           property: host
       
       - key: N8N_EDITOR_BASE_URL
         fromService:
           type: web
-          name: n8n-app
+          name: n8n-app-gvq5
           property: host
       
       # Authentication
