@@ -73,9 +73,9 @@ services:
           name: n8n-app-gvq5
           property: host
       
-      # Authentication - Disabled for easier access
-      - key: N8N_BASIC_AUTH_ACTIVE
-        value: false
+      # User Management (n8n v1.0+ - Basic Auth deprecated)
+      - key: N8N_USER_MANAGEMENT_DISABLED
+        value: true
       
       - key: N8N_ENCRYPTION_KEY
         sync: false
