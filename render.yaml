@@ -73,16 +73,9 @@ services:
           name: n8n-app-gvq5
           property: host
       
-      # Authentication
+      # Authentication - Disabled for easier access
       - key: N8N_BASIC_AUTH_ACTIVE
-        value: true
-      
-      - key: N8N_BASIC_AUTH_USER
-        value: admin
-      
-      # Set these manually in Render dashboard
-      - key: N8N_BASIC_AUTH_PASSWORD
-        sync: false
+        value: false
       
       - key: N8N_ENCRYPTION_KEY
         sync: false
