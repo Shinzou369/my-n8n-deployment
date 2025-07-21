@@ -1,0 +1,55 @@
+ Error Diagnosis and Solution for n8n Google OAuth `invalid_request`
+
+  1. The Core Problem: Relative vs. Absolute URL
+
+  The root cause of the Error 400: invalid_request is that the self-hosted n8n application does not know its
+   own public internet address.
+
+
+  When a user tries to connect a Google account, n8n must tell Google where to send the user back to after a
+   successful login. This is called the redirect_uri. Google's security policy strictly requires this
+  redirect_uri to be a full, absolute HTTPS address (e.g.,
+  https://your-app-name.replit.dev/rest/oauth2-credential/callback).
+
+  The error details confirm the issue: redirect_uri=n8n-app-gvq5/rest/oauth2-credential/callback.
+
+
+  This shows that n8n is only sending a relative path, not the full URL. Google sees this incomplete path,
+  considers it a security risk (as it could be manipulated), and immediately rejects the authentication
+  request with a generic 400 invalid_request error.
+
+  2. The Diagnosis
+
+
+  The n8n application is missing critical environment variables that inform it of its public-facing host and
+   URL. Without these, it cannot generate the valid, absolute redirect_uri that Google requires.
+
+
+  The user-facing error, "You can't sign in to this app because it doesn't comply with Google's OAuth 2.0
+  policy," is a direct symptom of this misconfiguration. The policy it's violating is the requirement for a
+  pre-registered and absolute redirect URI.
+
+  3. The Solution
+
+  To resolve this, the n8n hosting environment must be configured with the following environment variables.
+  After setting them, the application must be redeployed for the changes to take effect.
+
+
+   * `N8N_HOST`: This variable tells n8n its primary hostname.
+       * Key: N8N_HOST
+       * Value: n8n-app-gvq5.onrender.com (or the equivalent Replit hostname, e.g.,
+         `your-app-name.replit.dev`)
+       * Note: This value should not include https://.
+
+
+   * `WEBHOOK_URL`: This variable explicitly sets the full base URL for all webhooks, which is a best practice
+      for ensuring triggers also work correctly.
+       * Key: WEBHOOK_URL
+       * Value: https://n8n-app-gvq5.onrender.com (or the equivalent Replit URL)
+       * Note: This value must include https://.
+
+
+  Once these variables are set and the application is redeployed, n8n will correctly generate the full
+  redirect URI: https://n8n-app-gvq5.onrender.com/rest/oauth2-credential/callback. This URL must also be
+  added to the "Authorized redirect URIs" list in the Google Cloud Console for the specific OAuth client ID
+  being used.

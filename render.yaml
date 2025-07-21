@@ -55,6 +55,12 @@ services:
         value: 0.0.0.0
       
       # URLs (will be auto-updated with your service URL)
+      - key: N8N_HOST
+        value: n8n-app-gvq5.onrender.com
+      
+      - key: N8N_EDITOR_BASE_URL
+        value: https://n8n-app-gvq5.onrender.com/
+      
       - key: WEBHOOK_URL
         fromService:
           type: web
