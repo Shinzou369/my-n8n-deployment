@@ -83,7 +83,7 @@ function initializeDatabase() {
 
 // N8N API Configuration
 const N8N_CONFIG = {
-  baseURL: process.env.N8N_BASE_URL || 'https://asfga.app.n8n.cloud',
+  baseURL: process.env.N8N_BASE_URL || 'https://n8n-app-gvq5.onrender.com',
   auth: {
     username: process.env.N8N_USERNAME || 'admin',
     password: process.env.N8N_PASSWORD || 'admin123'
