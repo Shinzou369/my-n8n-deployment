@@ -77,6 +77,10 @@ services:
       - key: N8N_USER_MANAGEMENT_DISABLED
         value: true
       
+      # Additional settings to bypass setup
+      - key: N8N_SKIP_SETUP_FLOW
+        value: true
+      
       - key: N8N_ENCRYPTION_KEY
         sync: false
       
@@ -105,7 +109,7 @@ services:
         value: true
       
       - key: N8N_PERSONALIZATION_ENABLED
-        value: true
+        value: false
       
       - key: N8N_VERSION_NOTIFICATIONS_ENABLED
         value: true
