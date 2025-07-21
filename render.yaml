@@ -81,6 +81,10 @@ services:
       - key: N8N_SKIP_SETUP_FLOW
         value: true
       
+      # Remove "powered by n8n" footer from messages
+      - key: N8N_HIDE_USAGE_PAGE
+        value: true
+      
       - key: N8N_ENCRYPTION_KEY
         sync: false
       
