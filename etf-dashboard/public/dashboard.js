@@ -1,3 +1,4 @@
+
 let currentData = {
     templates: [],
     clients: [],
@@ -75,11 +76,27 @@ async function loadAllData() {
 async function loadStats() {
     try {
         const response = await fetch('/api/stats');
-        currentData.stats = await response.json();
+        if (response.ok) {
+            currentData.stats = await response.json();
+        } else {
+            // Fallback to default stats
+            currentData.stats = {
+                total_clients: 0,
+                total_templates: 0,
+                active_deployments: 0,
+                monthly_revenue: 0
+            };
+        }
         displayStats();
     } catch (error) {
         console.error('Error loading stats:', error);
         // Fallback to calculated stats
+        currentData.stats = {
+            total_clients: currentData.clients.length,
+            total_templates: currentData.templates.length,
+            active_deployments: currentData.deployments.filter(d => d.status === 'active').length,
+            monthly_revenue: 0
+        };
         displayStats();
     }
 }
@@ -96,7 +113,7 @@ function displayStats() {
             <div class="stat-label">ETF Templates</div>
         </div>
         <div class="stat-card">
-            <div class="stat-number">${stats.active_deployments || currentData.deployments.filter(d => d.status === 'deployed').length}</div>
+            <div class="stat-number">${stats.active_deployments || currentData.deployments.filter(d => d.status === 'active').length}</div>
             <div class="stat-label">Active Deployments</div>
         </div>
         <div class="stat-card">
@@ -110,30 +127,48 @@ function displayStats() {
 async function loadTemplates() {
     try {
         const response = await fetch('/api/templates');
-        currentData.templates = await response.json();
+        if (response.ok) {
+            currentData.templates = await response.json();
+        } else {
+            currentData.templates = [];
+        }
         displayTemplates();
     } catch (error) {
         console.error('Error loading templates:', error);
+        currentData.templates = [];
+        displayTemplates();
     }
 }
 
 async function loadClients() {
     try {
         const response = await fetch('/api/clients');
-        currentData.clients = await response.json();
+        if (response.ok) {
+            currentData.clients = await response.json();
+        } else {
+            currentData.clients = [];
+        }
         displayClients();
     } catch (error) {
         console.error('Error loading clients:', error);
+        currentData.clients = [];
+        displayClients();
     }
 }
 
 async function loadDeployments() {
     try {
         const response = await fetch('/api/deployments');
-        currentData.deployments = await response.json();
+        if (response.ok) {
+            currentData.deployments = await response.json();
+        } else {
+            currentData.deployments = [];
+        }
         displayDeployments();
     } catch (error) {
         console.error('Error loading deployments:', error);
+        currentData.deployments = [];
+        displayDeployments();
     }
 }
 
@@ -151,9 +186,10 @@ function displayTemplates() {
         div.className = 'list-item';
         div.innerHTML = `
             <h3>💼 ${template.name}</h3>
-            <div class="meta">Industry: ${template.industry || 'Not specified'} | Monthly: $${template.monthly_price || 0}</div>
+            <div class="meta">Category: ${template.category || 'Not specified'}</div>
             <p>${template.description || 'No description provided'}</p>
-            <p><strong>Required Fields:</strong> ${Array.isArray(template.required_fields) ? template.required_fields.join(', ') : 'None specified'}</p>
+            <p><strong>N8N Workflow ID:</strong> ${template.n8n_workflow_id || 'Not set'}</p>
+            <p><strong>Config Fields:</strong> ${Array.isArray(template.config_fields) ? template.config_fields.length : 0} fields</p>
             <small>Created: ${new Date(template.created_at).toLocaleDateString()}</small>
         `;
         container.appendChild(div);
@@ -175,9 +211,7 @@ function displayClients() {
         div.innerHTML = `
             <h3>👤 ${client.name}</h3>
             <div class="meta">${client.company || 'No company'} | ${client.industry || 'Industry not specified'}</div>
-            <p>📧 ${client.email || 'Email not provided'} | 📞 ${client.phone_number || 'Phone not provided'}</p>
-            <p><strong>Business Hours:</strong> ${client.business_hours || 'Not specified'}</p>
-            ${client.notes ? `<p><strong>Notes:</strong> ${client.notes}</p>` : ''}
+            <p>📧 ${client.email || 'Email not provided'}</p>
             <small>Added: ${new Date(client.created_at).toLocaleDateString()}</small>
         `;
         container.appendChild(div);
@@ -200,9 +234,8 @@ function displayDeployments() {
 
         div.innerHTML = `
             <h3>⚡ ${deployment.client_name} - ${deployment.template_name}</h3>
-            <div class="meta">${deployment.client_company || 'Company not specified'} | ${statusBadge}</div>
+            <div class="meta">${statusBadge}</div>
             <p><strong>Workflow:</strong> ${deployment.workflow_name || 'Workflow name not set'}</p>
-            <p><strong>Revenue:</strong> $${deployment.monthly_revenue || 0}/month</p>
             ${deployment.n8n_workflow_id ? `<p><strong>N8N ID:</strong> ${deployment.n8n_workflow_id}</p>` : ''}
             <small>Deployed: ${new Date(deployment.deployed_at).toLocaleDateString()}</small>
         `;
@@ -231,7 +264,7 @@ function populateDeploySelects() {
     currentData.templates.forEach(template => {
         const option = document.createElement('option');
         option.value = template.id;
-        option.textContent = `${template.name} ($${template.monthly_price || 0}/month)`;
+        option.textContent = template.name;
         templateSelect.appendChild(option);
     });
 }
@@ -239,28 +272,28 @@ function populateDeploySelects() {
 // Update deployment form based on selected template
 function updateDeploymentForm() {
     const templateId = document.getElementById('deployTemplateSelect').value;
-    const configFields = document.getElementById('configurationFields');
+    const configFieldsDiv = document.getElementById('configurationFields');
     const dynamicFields = document.getElementById('dynamicFields');
 
     if (!templateId) {
-        configFields.style.display = 'none';
+        configFieldsDiv.style.display = 'none';
         return;
     }
 
     const template = currentData.templates.find(t => t.id == templateId);
     if (!template || !template.config_fields) {
-        configFields.style.display = 'none';
+        configFieldsDiv.style.display = 'none';
         return;
     }
 
     // Show configuration section
-    configFields.style.display = 'block';
+    configFieldsDiv.style.display = 'block';
 
     // Create dynamic fields
     dynamicFields.innerHTML = '';
-    const configFields = template.config_fields || [];
+    const templateConfigFields = template.config_fields || [];
 
-    configFields.forEach(field => {
+    templateConfigFields.forEach(field => {
         const div = document.createElement('div');
         div.className = 'form-group';
 
@@ -284,18 +317,11 @@ function updateDeploymentForm() {
 async function handleClientSubmit(e) {
     e.preventDefault();
 
-    const formData = new FormData(e.target);
     const clientData = {
         name: document.getElementById('clientName').value,
         company: document.getElementById('clientCompany').value,
         email: document.getElementById('clientEmail').value,
-        phone_number: document.getElementById('clientPhone').value,
-        industry: document.getElementById('clientIndustry').value,
-        business_hours: document.getElementById('clientHours').value,
-        support_email: document.getElementById('clientSupportEmail').value,
-        openai_api_key: document.getElementById('clientOpenAIKey').value,
-        google_calendar_id: document.getElementById('clientCalendarId').value,
-        notes: document.getElementById('clientNotes').value
+        industry: document.getElementById('clientIndustry').value
     };
 
     try {
@@ -325,10 +351,9 @@ async function handleTemplateSubmit(e) {
     const templateData = {
         name: document.getElementById('templateName').value,
         description: document.getElementById('templateDescription').value,
-        industry: document.getElementById('templateIndustry').value,
-        monthly_price: parseFloat(document.getElementById('templatePrice').value) || 0,
-        n8n_template_id: document.getElementById('templateN8NId').value,
-        required_fields: document.getElementById('templateFields').value.split(',').map(f => f.trim()).filter(f => f)
+        category: document.getElementById('templateIndustry').value,
+        n8n_workflow_id: document.getElementById('templateN8NId').value,
+        config_fields: document.getElementById('templateFields').value.split(',').map(f => f.trim()).filter(f => f)
     };
 
     try {
@@ -365,16 +390,16 @@ async function handleDeploySubmit(e) {
     }
 
     // Collect configuration data from dynamic fields
-    const configuration = {};
+    const config_data = {};
     const dynamicInputs = document.querySelectorAll('#dynamicFields input');
     dynamicInputs.forEach(input => {
-        configuration[input.name] = input.value;
+        config_data[input.name] = input.value;
     });
 
     const deployData = {
-        client_id: parseInt(clientId),
-        template_id: parseInt(templateId),
-        configuration: configuration
+        client_id: clientId,
+        template_id: templateId,
+        config_data: config_data
     };
 
     try {
@@ -384,7 +409,7 @@ async function handleDeploySubmit(e) {
         submitBtn.textContent = '⏳ Deploying...';
         submitBtn.disabled = true;
 
-        const response = await fetch('/api/deploy-workflow', {
+        const response = await fetch('/api/deploy', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(deployData)
@@ -393,7 +418,7 @@ async function handleDeploySubmit(e) {
         const result = await response.json();
 
         if (response.ok) {
-            alert(`🎉 Workflow deployed successfully!\n\n${result.message}\n\nDeployment ID: ${result.deployment_id}`);
+            alert(`🎉 Workflow deployed successfully!\n\n${result.message}`);
             closeModal('deployModal');
             loadDeployments();
             loadStats();
@@ -408,5 +433,9 @@ async function handleDeploySubmit(e) {
     } catch (error) {
         console.error('Error:', error);
         alert('❌ Error during deployment');
+        // Reset button on error
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        submitBtn.textContent = '🚀 Deploy Workflow';
+        submitBtn.disabled = false;
     }
 }
