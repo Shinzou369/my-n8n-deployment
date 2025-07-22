@@ -363,6 +363,16 @@ app.post('/api/deploy', async (req, res) => {
       return res.status(404).json({ error: 'Template or client not found' });
     }
 
+    // Test N8N connection first
+    try {
+      await n8nClient.getWorkflows();
+    } catch (error) {
+      return res.status(500).json({ 
+        error: 'Cannot connect to N8N instance', 
+        details: 'Please check N8N settings and ensure N8N is running'
+      });
+    }
+
     // Get the master workflow from N8N
     const masterWorkflow = await n8nClient.getWorkflow(template.n8n_workflow_id);
 
@@ -370,21 +380,23 @@ app.post('/api/deploy', async (req, res) => {
     const customizedWorkflow = {
       ...masterWorkflow,
       name: `[${client.name}] - ${template.name}`,
-      id: undefined // Remove ID so N8N creates a new one
+      id: undefined, // Remove ID so N8N creates a new one
+      active: false, // Start inactive, we'll activate after creation
+      tags: [`client:${client.name.toLowerCase().replace(/\s+/g, '-')}`, 'etf-deployed']
     };
 
     // Inject client configuration into workflow nodes
     customizedWorkflow.nodes = customizedWorkflow.nodes.map(node => {
-      // This is where we inject client-specific data into nodes
-      // Implementation depends on your specific workflow structures
-      return injectConfigIntoNode(node, config_data);
+      return injectConfigIntoNode(node, config_data, client);
     });
 
     // Create new workflow in N8N
     const newWorkflow = await n8nClient.createWorkflow(customizedWorkflow);
+    console.log(`Created workflow: ${newWorkflow.name} (ID: ${newWorkflow.id})`);
 
     // Activate the new workflow
     await n8nClient.activateWorkflow(newWorkflow.id);
+    console.log(`Activated workflow: ${newWorkflow.id}`);
 
     // Save deployment record
     const deploymentId = uuidv4();
@@ -411,7 +423,8 @@ app.post('/api/deploy', async (req, res) => {
         deployment_id: deploymentId,
         n8n_workflow_id: newWorkflow.id,
         workflow_name: newWorkflow.name,
-        message: 'Workflow deployed and activated successfully'
+        webhook_url: extractWebhookUrl(customizedWorkflow.nodes, newWorkflow.id),
+        message: `Workflow successfully deployed for ${client.name}!`
       });
     });
 
@@ -424,21 +437,121 @@ app.post('/api/deploy', async (req, res) => {
   }
 });
 
-// Helper function to inject configuration into workflow nodes
-function injectConfigIntoNode(node, configData) {
-  // This function needs to be customized based on your workflow patterns
-  // For now, it's a placeholder that shows the concept
+// Advanced configuration injection - handles different node types
+function injectConfigIntoNode(node, configData, client) {
+  let updatedNode = JSON.parse(JSON.stringify(node)); // Deep clone
 
-  if (node.parameters) {
-    Object.keys(configData).forEach(key => {
-      if (node.parameters[key] !== undefined) {
-        node.parameters[key] = configData[key];
+  // Handle different node types with specific configuration patterns
+  switch (updatedNode.type) {
+    case 'n8n-nodes-base.gmail':
+    case 'n8n-nodes-base.emailSend':
+      // Email nodes
+      if (updatedNode.parameters) {
+        if (configData.support_email) {
+          updatedNode.parameters.fromEmail = configData.support_email;
+          updatedNode.parameters.replyTo = configData.support_email;
+        }
+        if (configData.email_subject_prefix) {
+          updatedNode.parameters.subject = `[${configData.email_subject_prefix}] ${updatedNode.parameters.subject || ''}`;
+        }
       }
-    });
+      break;
+
+    case 'n8n-nodes-base.webhook':
+      // Webhook nodes - create unique webhook paths
+      if (updatedNode.parameters && updatedNode.parameters.path) {
+        const clientSlug = client.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        updatedNode.parameters.path = `/${clientSlug}-${updatedNode.parameters.path}`;
+      }
+      break;
+
+    case 'n8n-nodes-base.openAi':
+    case 'n8n-nodes-base.chatOpenAi':
+      // OpenAI nodes
+      if (updatedNode.parameters && configData.openai_api_key) {
+        // Set credential reference for OpenAI API key
+        updatedNode.credentials = {
+          ...updatedNode.credentials,
+          openAiApi: {
+            id: `openai-${client.id}`,
+            name: `OpenAI - ${client.name}`
+          }
+        };
+      }
+      break;
+
+    case 'n8n-nodes-base.googleCalendar':
+      // Google Calendar nodes
+      if (updatedNode.parameters && configData.google_calendar_id) {
+        updatedNode.parameters.calendarId = configData.google_calendar_id;
+      }
+      break;
+
+    case 'n8n-nodes-base.slack':
+      // Slack nodes
+      if (updatedNode.parameters && configData.slack_channel) {
+        updatedNode.parameters.channel = configData.slack_channel;
+      }
+      break;
+
+    case 'n8n-nodes-base.httpRequest':
+      // HTTP Request nodes - update base URLs
+      if (updatedNode.parameters && configData.api_base_url) {
+        if (updatedNode.parameters.url) {
+          updatedNode.parameters.url = updatedNode.parameters.url.replace('{{API_BASE_URL}}', configData.api_base_url);
+        }
+      }
+      break;
   }
 
-  return node;
+  // Universal placeholder replacement in all string parameters
+  const nodeString = JSON.stringify(updatedNode);
+  const replacedString = nodeString
+    .replace(/\{\{CLIENT_NAME\}\}/g, client.name)
+    .replace(/\{\{CLIENT_EMAIL\}\}/g, client.email || '')
+    .replace(/\{\{CLIENT_COMPANY\}\}/g, client.company || '')
+    .replace(/\{\{CLIENT_PHONE\}\}/g, client.phone_number || '')
+    .replace(/\{\{SUPPORT_EMAIL\}\}/g, configData.support_email || client.email || '')
+    .replace(/\{\{BUSINESS_HOURS\}\}/g, client.business_hours || '9 AM - 5 PM')
+    .replace(/\{\{OPENAI_API_KEY\}\}/g, configData.openai_api_key || '')
+    .replace(/\{\{GOOGLE_CALENDAR_ID\}\}/g, configData.google_calendar_id || '')
+    .replace(/\{\{SLACK_CHANNEL\}\}/g, configData.slack_channel || '')
+    .replace(/\{\{API_BASE_URL\}\}/g, configData.api_base_url || '');
+
+  return JSON.parse(replacedString);
 }
+
+// Extract webhook URLs from deployed workflow
+function extractWebhookUrl(nodes, workflowId) {
+  const webhookNodes = nodes.filter(node => node.type === 'n8n-nodes-base.webhook');
+  
+  if (webhookNodes.length > 0) {
+    const webhookPath = webhookNodes[0].parameters?.path || '';
+    return `${N8N_BASE_URL}/webhook${webhookPath}`;
+  }
+  
+  return null;
+}
+
+// Stats endpoint
+app.get('/api/stats', (req, res) => {
+  const sql = `
+    SELECT 
+      (SELECT COUNT(*) FROM clients) as total_clients,
+      (SELECT COUNT(*) FROM templates) as total_templates,
+      (SELECT COUNT(*) FROM deployments WHERE status = 'active') as active_deployments,
+      (SELECT COALESCE(SUM(CAST(JSON_EXTRACT(config_data, '$.monthly_revenue') AS REAL)), 0) FROM deployments WHERE status = 'active') as monthly_revenue
+  `;
+
+  db.get(sql, (err, row) => {
+    if (err) {
+      console.error('Stats query error:', err);
+      res.status(500).json({ error: 'Failed to fetch stats' });
+      return;
+    }
+    res.json(row);
+  });
+});
 
 // Test N8N connection
 app.get('/api/test-n8n', async (req, res) => {

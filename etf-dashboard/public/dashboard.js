@@ -248,7 +248,7 @@ function updateDeploymentForm() {
     }
 
     const template = currentData.templates.find(t => t.id == templateId);
-    if (!template || !template.required_fields) {
+    if (!template || !template.config_fields) {
         configFields.style.display = 'none';
         return;
     }
@@ -258,17 +258,23 @@ function updateDeploymentForm() {
 
     // Create dynamic fields
     dynamicFields.innerHTML = '';
-    template.required_fields.forEach(field => {
+    const configFields = template.config_fields || [];
+
+    configFields.forEach(field => {
         const div = document.createElement('div');
         div.className = 'form-group';
 
-        const label = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        const fieldType = field.includes('email') ? 'email' : 
-                         field.includes('key') ? 'password' : 'text';
+        const fieldName = typeof field === 'string' ? field : field.name;
+        const fieldType = typeof field === 'string' ? 
+            (field.includes('email') ? 'email' : field.includes('key') ? 'password' : 'text') :
+            (field.type || 'text');
+        const fieldLabel = typeof field === 'string' ? 
+            field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) :
+            (field.label || fieldName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
 
         div.innerHTML = `
-            <label>${label}:</label>
-            <input type="${fieldType}" name="${field}" placeholder="Enter ${label.toLowerCase()}...">
+            <label>${fieldLabel}:</label>
+            <input type="${fieldType}" name="${fieldName}" placeholder="Enter ${fieldLabel.toLowerCase()}...">
         `;
         dynamicFields.appendChild(div);
     });
