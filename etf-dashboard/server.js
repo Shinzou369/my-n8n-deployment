@@ -252,10 +252,26 @@ app.get('/', (req, res) => {
 // Active N8N Workflows (Live Templates)
 app.get('/api/active-workflows', async (req, res) => {
   try {
+    console.log('🔍 Fetching workflows from n8n...');
+    console.log('📡 N8N Base URL:', N8N_BASE_URL);
+    console.log('🔐 Using API Key:', N8N_API_KEY ? 'Yes' : 'No');
+    
     const workflows = await n8nClient.getWorkflows();
+    console.log('📊 Raw workflows response:', JSON.stringify(workflows, null, 2));
+    
+    // Handle different response formats
+    let workflowList = [];
+    if (workflows && workflows.data) {
+      workflowList = workflows.data;
+    } else if (Array.isArray(workflows)) {
+      workflowList = workflows;
+    }
+    
+    console.log(`📋 Found ${workflowList.length} total workflows`);
     
     // Filter only active workflows
-    const activeWorkflows = workflows.data ? workflows.data.filter(workflow => workflow.active === true) : [];
+    const activeWorkflows = workflowList.filter(workflow => workflow.active === true);
+    console.log(`✅ Found ${activeWorkflows.length} active workflows`);
     
     // Transform to template format for dashboard compatibility
     const templates = activeWorkflows.map(workflow => ({
@@ -270,12 +286,15 @@ app.get('/api/active-workflows', async (req, res) => {
       active: workflow.active
     }));
     
+    console.log('🚀 Sending templates:', templates);
     res.json(templates);
   } catch (error) {
-    console.error('Error fetching active workflows:', error.message);
+    console.error('❌ Error fetching active workflows:', error.message);
+    console.error('📋 Full error:', error);
     res.status(500).json({ 
       error: 'Failed to fetch active workflows from n8n',
-      details: error.message 
+      details: error.message,
+      n8n_url: N8N_BASE_URL
     });
   }
 });
