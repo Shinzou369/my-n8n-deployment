@@ -126,6 +126,20 @@ function displayStats() {
 
 async function loadTemplates() {
     try {
+        // First try to load active workflows from n8n as templates
+        const response = await fetch('/api/active-workflows');
+        if (response.ok) {
+            const activeWorkflows = await response.json();
+            currentData.templates = activeWorkflows;
+            displayTemplates();
+            return;
+        }
+    } catch (error) {
+        console.error('Error loading active workflows:', error);
+    }
+    
+    // Fallback to manual templates if n8n is not available
+    try {
         const response = await fetch('/api/templates');
         if (response.ok) {
             currentData.templates = await response.json();
@@ -177,20 +191,23 @@ function displayTemplates() {
     container.innerHTML = '';
 
     if (currentData.templates.length === 0) {
-        container.innerHTML = '<div class="list-item"><p>No templates yet. Create your first ETF template!</p></div>';
+        container.innerHTML = '<div class="list-item"><p>No active workflows found. Create and activate workflows in your n8n instance!</p></div>';
         return;
     }
 
     currentData.templates.forEach(template => {
         const div = document.createElement('div');
         div.className = 'list-item';
+        const isActiveWorkflow = template.category === 'n8n-workflow';
+        const statusBadge = isActiveWorkflow ? '🟢 Active' : '📋 Manual';
+        
         div.innerHTML = `
-            <h3>💼 ${template.name}</h3>
-            <div class="meta">Category: ${template.category || 'Not specified'}</div>
+            <h3>⚡ ${template.name} <span style="font-size: 0.8em; color: #4CAF50;">${statusBadge}</span></h3>
+            <div class="meta">Source: ${isActiveWorkflow ? 'Live n8n Workflow' : 'Manual Template'}</div>
             <p>${template.description || 'No description provided'}</p>
-            <p><strong>N8N Workflow ID:</strong> ${template.n8n_workflow_id || 'Not set'}</p>
-            <p><strong>Config Fields:</strong> ${Array.isArray(template.config_fields) ? template.config_fields.length : 0} fields</p>
-            <small>Created: ${new Date(template.created_at).toLocaleDateString()}</small>
+            <p><strong>Workflow ID:</strong> ${template.n8n_workflow_id || 'Not set'}</p>
+            ${isActiveWorkflow ? '<p style="color: #4CAF50;">✅ Ready for client deployment</p>' : ''}
+            <small>Updated: ${template.updated_at ? new Date(template.updated_at).toLocaleDateString() : 'Unknown'}</small>
         `;
         container.appendChild(div);
     });

@@ -249,7 +249,38 @@ app.get('/', (req, res) => {
 
 // API Routes
 
-// Templates
+// Active N8N Workflows (Live Templates)
+app.get('/api/active-workflows', async (req, res) => {
+  try {
+    const workflows = await n8nClient.getWorkflows();
+    
+    // Filter only active workflows
+    const activeWorkflows = workflows.data ? workflows.data.filter(workflow => workflow.active === true) : [];
+    
+    // Transform to template format for dashboard compatibility
+    const templates = activeWorkflows.map(workflow => ({
+      id: workflow.id,
+      name: workflow.name,
+      description: `Active n8n workflow: ${workflow.name}`,
+      category: 'n8n-workflow',
+      n8n_workflow_id: workflow.id,
+      config_fields: [],
+      created_at: workflow.createdAt,
+      updated_at: workflow.updatedAt,
+      active: workflow.active
+    }));
+    
+    res.json(templates);
+  } catch (error) {
+    console.error('Error fetching active workflows:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch active workflows from n8n',
+      details: error.message 
+    });
+  }
+});
+
+// Templates (Legacy - kept for manual templates)
 app.get('/api/templates', (req, res) => {
   db.all('SELECT * FROM templates ORDER BY created_at DESC', (err, rows) => {
     if (err) {
