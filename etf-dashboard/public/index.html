@@ -5,453 +5,447 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ETF Management Dashboard</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f6fa;
-            color: #2f3542;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
+            margin: 0;
             padding: 20px;
-        }
-
-        header {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-            border-radius: 10px;
+            min-height: 100vh;
         }
-
-        .header-content {
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
             text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #667eea;
         }
-
-        h1 {
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            font-weight: 300;
+        .header h1 {
+            color: #333;
+            margin: 0;
+            font-size: 2.5em;
         }
-
-        .subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
+        .header p {
+            color: #666;
+            font-size: 1.2em;
+            margin: 10px 0 0 0;
         }
-
-        .stats-grid {
+        .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
         }
-
         .stat-card {
-            background: white;
-            padding: 1.5rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
             text-align: center;
-        }
-
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .main-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 1rem;
-            margin-bottom: 2rem;
-        }
-
-        .action-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .action-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-        }
-
-        .action-card h3 {
-            color: #667eea;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .action-card p {
-            color: #666;
-            line-height: 1.5;
-        }
-
-        .recent-deployments {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
             overflow: hidden;
         }
-
-        .section-header {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-bottom: 1px solid #e9ecef;
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255,255,255,0.1);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
         }
-
-        .section-header h2 {
-            color: #2f3542;
-            margin-bottom: 0.5rem;
+        .stat-card:hover::before {
+            transform: translateX(0);
         }
-
-        .deployments-list {
-            padding: 1rem 0;
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 5px;
         }
-
-        .deployment-item {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid #f1f2f6;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .deployment-info h4 {
-            color: #2f3542;
-            margin-bottom: 0.25rem;
-        }
-
-        .deployment-info p {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        .status-active {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-failed {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: opacity 0.2s;
-        }
-
-        .btn:hover {
+        .stat-label {
+            font-size: 0.9em;
             opacity: 0.9;
         }
-
-        .btn-secondary {
-            background: #6c757d;
+        .tabs {
+            display: flex;
+            border-bottom: 3px solid #ddd;
+            margin-bottom: 30px;
         }
-
+        .tab {
+            padding: 15px 25px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            border-bottom: 3px solid transparent;
+            font-size: 1.1em;
+            transition: all 0.3s;
+        }
+        .tab.active {
+            border-bottom-color: #667eea;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .tab:hover:not(.active) {
+            background: #f5f5f5;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+        }
+        .btn-warning {
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .list-item {
+            padding: 20px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background: #f9f9f9;
+            transition: all 0.3s;
+        }
+        .list-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .list-item h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+            font-size: 1.3em;
+        }
+        .list-item .meta {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
         .modal {
             display: none;
             position: fixed;
-            top: 0;
+            z-index: 1000;
             left: 0;
+            top: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 1000;
+            background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s;
         }
-
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
         .modal-content {
-            background: white;
+            background-color: white;
+            margin: 3% auto;
+            padding: 30px;
+            border-radius: 12px;
             width: 90%;
-            max-width: 500px;
-            margin: 5% auto;
-            padding: 2rem;
-            border-radius: 10px;
-            position: relative;
+            max-width: 700px;
+            max-height: 85%;
+            overflow-y: auto;
+            animation: slideIn 0.3s;
         }
-
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
         .close {
-            position: absolute;
-            right: 1rem;
-            top: 1rem;
-            font-size: 1.5rem;
+            color: #aaa;
+            float: right;
+            font-size: 32px;
+            font-weight: bold;
             cursor: pointer;
-            color: #666;
+            transition: color 0.3s;
         }
-
-        .form-group {
-            margin-bottom: 1rem;
+        .close:hover {
+            color: #667eea;
         }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 0.5rem;
-            color: #2f3542;
-            font-weight: 500;
+        .deployment-card {
+            border-left: 5px solid #4CAF50;
+            background: white;
         }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-
-        .form-group textarea {
-            height: 100px;
-            resize: vertical;
-        }
-
-        .icon {
-            width: 20px;
-            height: 20px;
+        .status-badge {
             display: inline-block;
-        }
-
-        .connection-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
+            padding: 4px 12px;
             border-radius: 20px;
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
         }
-
-        .status-connected {
-            background: #d4edda;
-            color: #155724;
+        .status-deployed { background: #4CAF50; color: white; }
+        .status-pending { background: #ff9800; color: white; }
+        .status-error { background: #f44336; color: white; }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
-
-        .status-disconnected {
-            background: #f8d7da;
-            color: #721c24;
+        .action-card {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        .action-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        .action-icon {
+            font-size: 3em;
+            margin-bottom: 15px;
+            display: block;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <div class="header-content">
-                <h1>ETF Management Dashboard</h1>
-                <p class="subtitle">Ergovia TaskForce - Internal Business Automation Control Center</p>
-            </div>
-        </header>
-
-        <div class="connection-status" id="connectionStatus">
-            <span id="statusIcon">🔴</span>
-            <span id="statusText">Checking N8N connection...</span>
+        <div class="header">
+            <h1>🚀 ETF Management Dashboard</h1>
+            <p>Ergovia TaskForce - Your Backend Office for Workflow Automation</p>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number" id="templateCount">0</div>
-                <div class="stat-label">Workflow Templates</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="clientCount">0</div>
-                <div class="stat-label">Active Clients</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="deploymentCount">0</div>
-                <div class="stat-label">Live Deployments</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number" id="revenueCount">$0</div>
-                <div class="stat-label">Monthly Revenue</div>
-            </div>
+        <div class="stats" id="statsContainer">
+            <!-- Stats will be loaded here -->
         </div>
 
-        <div class="main-actions">
-            <div class="action-card" onclick="openModal('deployModal')">
-                <h3>
-                    <span class="icon">🚀</span>
-                    Deploy New Workflow
-                </h3>
-                <p>Select a client and template to deploy a customized automation workflow. This is your main money-making action!</p>
-            </div>
-
-            <div class="action-card" onclick="openModal('templateModal')">
-                <h3>
-                    <span class="icon">📋</span>
-                    Manage Templates
-                </h3>
-                <p>Add new ETF templates or modify existing ones. Each template is a reusable workflow for different business verticals.</p>
-            </div>
-
-            <div class="action-card" onclick="openModal('clientModal')">
-                <h3>
-                    <span class="icon">👥</span>
-                    Manage Clients
-                </h3>
-                <p>Add new clients or update existing client information. Keep track of who gets which workflows.</p>
-            </div>
-
-            <div class="action-card" onclick="openModal('settingsModal')">
-                <h3>
-                    <span class="icon">⚙️</span>
-                    N8N Settings
-                </h3>
-                <p>Configure connection to your N8N instance. Make sure the dashboard can communicate with your automation server.</p>
-            </div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('dashboard')">🏠 Dashboard</button>
+            <button class="tab" onclick="showTab('templates')">📋 Templates</button>
+            <button class="tab" onclick="showTab('clients')">👥 Clients</button>
+            <button class="tab" onclick="showTab('deployments')">⚡ Deployments</button>
         </div>
 
-        <div class="recent-deployments">
-            <div class="section-header">
-                <h2>Recent Deployments</h2>
-                <p>Latest workflow deployments for your clients</p>
-            </div>
-            <div class="deployments-list" id="deploymentsList">
-                <div class="deployment-item">
-                    <div class="deployment-info">
-                        <h4>Loading deployments...</h4>
-                        <p>Please wait while we fetch your data</p>
-                    </div>
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="quick-actions">
+                <div class="action-card" onclick="showModal('deployModal')">
+                    <span class="action-icon">🚀</span>
+                    <h3>Deploy Workflow</h3>
+                    <p>Deploy a customized workflow for a client</p>
+                </div>
+                <div class="action-card" onclick="showModal('clientModal')">
+                    <span class="action-icon">👤</span>
+                    <h3>Add Client</h3>
+                    <p>Register a new client for workflow deployment</p>
+                </div>
+                <div class="action-card" onclick="showModal('templateModal')">
+                    <span class="action-icon">📋</span>
+                    <h3>Add Template</h3>
+                    <p>Create a new ETF template for your business</p>
                 </div>
             </div>
         </div>
+
+        <!-- Templates Tab -->
+        <div id="templates" class="tab-content">
+            <h2>📋 ETF Template Library</h2>
+            <button class="btn" onclick="showModal('templateModal')">+ Add New Template</button>
+            <div id="templatesList"></div>
+        </div>
+
+        <!-- Clients Tab -->
+        <div id="clients" class="tab-content">
+            <h2>👥 Client Management</h2>
+            <button class="btn" onclick="showModal('clientModal')">+ Add New Client</button>
+            <div id="clientsList"></div>
+        </div>
+
+        <!-- Deployments Tab -->
+        <div id="deployments" class="tab-content">
+            <h2>⚡ Active Deployments</h2>
+            <div id="deploymentsList"></div>
+        </div>
     </div>
 
-    <!-- Deploy Workflow Modal -->
+    <!-- Deploy Workflow Modal - The Core Feature! -->
     <div id="deployModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('deployModal')">&times;</span>
-            <h2>Deploy New Workflow</h2>
+            <h2>🚀 Deploy New Workflow</h2>
             <form id="deployForm">
                 <div class="form-group">
-                    <label for="clientSelect">Select Client:</label>
-                    <select id="clientSelect" required>
+                    <label>Select Client:</label>
+                    <select id="deployClientSelect" required>
                         <option value="">Choose a client...</option>
                     </select>
                 </div>
+
                 <div class="form-group">
-                    <label for="templateSelect">Select Template:</label>
-                    <select id="templateSelect" required>
+                    <label>Select Template:</label>
+                    <select id="deployTemplateSelect" required>
                         <option value="">Choose a template...</option>
                     </select>
                 </div>
-                <div id="configFields"></div>
-                <button type="submit" class="btn">Deploy Workflow</button>
+
+                <div id="configurationFields" style="display:none;">
+                    <h3>Client Configuration</h3>
+                    <div id="dynamicFields"></div>
+                </div>
+
+                <button type="submit" class="btn btn-success">🚀 Deploy Workflow</button>
             </form>
         </div>
     </div>
 
-    <!-- Template Modal -->
-    <div id="templateModal" class="modal">
-        <div class="modal-content">
-            <span class="close" onclick="closeModal('templateModal')">&times;</span>
-            <h2>Add New Template</h2>
-            <form id="templateForm">
-                <div class="form-group">
-                    <label for="templateName">Template Name:</label>
-                    <input type="text" id="templateName" placeholder="e.g., Pet Clinic ETF" required>
-                </div>
-                <div class="form-group">
-                    <label for="templateDescription">Description:</label>
-                    <textarea id="templateDescription" placeholder="What does this template automate?"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="templateCategory">Category:</label>
-                    <input type="text" id="templateCategory" placeholder="e.g., Healthcare, Real Estate">
-                </div>
-                <div class="form-group">
-                    <label for="n8nWorkflowId">N8N Workflow ID:</label>
-                    <input type="text" id="n8nWorkflowId" placeholder="Get this from your N8N instance" required>
-                </div>
-                <button type="submit" class="btn">Add Template</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- Client Modal -->
+    <!-- Add Client Modal -->
     <div id="clientModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('clientModal')">&times;</span>
-            <h2>Add New Client</h2>
+            <h2>👤 Add New Client</h2>
             <form id="clientForm">
                 <div class="form-group">
-                    <label for="clientName">Client Name:</label>
-                    <input type="text" id="clientName" placeholder="e.g., Dr. Smith" required>
+                    <label>Client Name *:</label>
+                    <input type="text" id="clientName" required placeholder="e.g., Dr. Smith">
                 </div>
+
                 <div class="form-group">
-                    <label for="clientEmail">Email:</label>
-                    <input type="email" id="clientEmail" placeholder="client@example.com">
-                </div>
-                <div class="form-group">
-                    <label for="clientCompany">Company:</label>
+                    <label>Company Name:</label>
                     <input type="text" id="clientCompany" placeholder="e.g., Happy Paws Veterinary Clinic">
                 </div>
+
                 <div class="form-group">
-                    <label for="clientIndustry">Industry:</label>
-                    <input type="text" id="clientIndustry" placeholder="e.g., Healthcare, Real Estate">
+                    <label>Email:</label>
+                    <input type="email" id="clientEmail" placeholder="dr.smith@happypaws.com">
                 </div>
-                <button type="submit" class="btn">Add Client</button>
+
+                <div class="form-group">
+                    <label>Phone Number:</label>
+                    <input type="text" id="clientPhone" placeholder="+1 (555) 123-4567">
+                </div>
+
+                <div class="form-group">
+                    <label>Industry:</label>
+                    <select id="clientIndustry">
+                        <option value="">Select industry...</option>
+                        <option value="Veterinary">Veterinary</option>
+                        <option value="Real Estate">Real Estate</option>
+                        <option value="Food Service">Food Service</option>
+                        <option value="Healthcare">Healthcare</option>
+                        <option value="Legal">Legal</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Business Hours:</label>
+                    <input type="text" id="clientHours" placeholder="9 AM - 5 PM, Mon-Fri">
+                </div>
+
+                <div class="form-group">
+                    <label>Support Email:</label>
+                    <input type="email" id="clientSupportEmail" placeholder="support@happypaws.com">
+                </div>
+
+                <div class="form-group">
+                    <label>OpenAI API Key:</label>
+                    <input type="password" id="clientOpenAIKey" placeholder="sk-...">
+                </div>
+
+                <div class="form-group">
+                    <label>Google Calendar ID:</label>
+                    <input type="text" id="clientCalendarId" placeholder="calendar@gmail.com">
+                </div>
+
+                <div class="form-group">
+                    <label>Notes:</label>
+                    <textarea id="clientNotes" rows="3" placeholder="Additional notes about this client..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-success">Save Client</button>
             </form>
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="modal">
+    <!-- Add Template Modal -->
+    <div id="templateModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeModal('settingsModal')">&times;</span>
-            <h2>N8N Connection Settings</h2>
-            <form id="settingsForm">
+            <span class="close" onclick="closeModal('templateModal')">&times;</span>
+            <h2>📋 Add New Template</h2>
+            <form id="templateForm">
                 <div class="form-group">
-                    <label for="n8nUrl">N8N Base URL:</label>
-                    <input type="url" id="n8nUrl" placeholder="https://your-n8n-instance.onrender.com" required>
+                    <label>Template Name *:</label>
+                    <input type="text" id="templateName" required placeholder="e.g., Pet Clinic ETF">
                 </div>
+
                 <div class="form-group">
-                    <label for="n8nUsername">Username:</label>
-                    <input type="text" id="n8nUsername" value="admin" required>
+                    <label>Description:</label>
+                    <textarea id="templateDescription" rows="3" placeholder="Describe what this template automates..."></textarea>
                 </div>
+
                 <div class="form-group">
-                    <label for="n8nPassword">Password:</label>
-                    <input type="password" id="n8nPassword" placeholder="Your N8N password" required>
+                    <label>Industry:</label>
+                    <input type="text" id="templateIndustry" placeholder="e.g., Veterinary">
                 </div>
-                <button type="submit" class="btn">Update Settings</button>
-                <button type="button" class="btn btn-secondary" onclick="testConnection()" style="margin-left: 1rem;">Test Connection</button>
+
+                <div class="form-group">
+                    <label>Monthly Price ($):</label>
+                    <input type="number" id="templatePrice" step="0.01" placeholder="97.00">
+                </div>
+
+                <div class="form-group">
+                    <label>N8N Template ID:</label>
+                    <input type="text" id="templateN8NId" placeholder="workflow_123 (from your n8n instance)">
+                </div>
+
+                <div class="form-group">
+                    <label>Required Fields (comma-separated):</label>
+                    <input type="text" id="templateFields" placeholder="client_name,support_email,openai_api_key">
+                </div>
+
+                <button type="submit" class="btn btn-success">Save Template</button>
             </form>
         </div>
     </div>
