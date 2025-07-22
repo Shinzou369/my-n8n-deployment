@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Onboarding - ETF Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        .progress-bar {
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            margin-top: 20px;
+        }
+        .progress-fill {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.3s;
+        }
+        .form-container {
+            padding: 40px;
+        }
+        .step {
+            display: none;
+        }
+        .step.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .step-title {
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        .required {
+            color: #e74c3c;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin: 10px;
+            transition: all 0.3s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .btn-secondary {
+            background: #6c757d;
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #28a745, #20c997);
+        }
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        .template-preview {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .parameter-list {
+            list-style: none;
+        }
+        .parameter-list li {
+            padding: 10px;
+            background: white;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .success-message {
+            text-align: center;
+            padding: 40px;
+        }
+        .success-icon {
+            font-size: 4em;
+            color: #28a745;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Client Onboarding</h1>
+            <p>Set up your personalized automation workflow</p>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="form-container">
+            <!-- Step 1: Select Template -->
+            <div class="step active" id="step1">
+                <h2 class="step-title">Choose Your Automation Template</h2>
+                <div class="form-group">
+                    <label for="templateSelect">Available Templates <span class="required">*</span></label>
+                    <select id="templateSelect" required>
+                        <option value="">Loading templates...</option>
+                    </select>
+                </div>
+                <div id="templatePreview" class="template-preview" style="display:none;">
+                    <h3>Template Details</h3>
+                    <p id="templateDescription"></p>
+                    <div id="requiredParams"></div>
+                </div>
+                <div class="navigation">
+                    <div></div>
+                    <button class="btn" onclick="nextStep()" id="nextBtn1" disabled>Next Step</button>
+                </div>
+            </div>
+
+            <!-- Step 2: Client Information -->
+            <div class="step" id="step2">
+                <h2 class="step-title">Your Business Information</h2>
+                <div class="form-group">
+                    <label for="clientName">Business Name <span class="required">*</span></label>
+                    <input type="text" id="clientName" required placeholder="Your Business Name">
+                </div>
+                <div class="form-group">
+                    <label for="clientEmail">Contact Email <span class="required">*</span></label>
+                    <input type="email" id="clientEmail" required placeholder="contact@yourbusiness.com">
+                </div>
+                <div class="form-group">
+                    <label for="clientIndustry">Industry</label>
+                    <input type="text" id="clientIndustry" placeholder="e.g., Pet Clinic, Real Estate">
+                </div>
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="prevStep()">Previous</button>
+                    <button class="btn" onclick="nextStep()" id="nextBtn2">Next Step</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Workflow Configuration -->
+            <div class="step" id="step3">
+                <h2 class="step-title">Configure Your Automation</h2>
+                <div id="dynamicFields">
+                    <!-- Dynamic fields will be populated based on selected template -->
+                </div>
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="prevStep()">Previous</button>
+                    <button class="btn" onclick="nextStep()" id="nextBtn3">Next Step</button>
+                </div>
+            </div>
+
+            <!-- Step 4: Review & Deploy -->
+            <div class="step" id="step4">
+                <h2 class="step-title">Review Your Configuration</h2>
+                <div id="reviewData" class="template-preview">
+                    <!-- Review data will be populated -->
+                </div>
+                <div class="navigation">
+                    <button class="btn btn-secondary" onclick="prevStep()">Previous</button>
+                    <button class="btn btn-success" onclick="deployWorkflow()" id="deployBtn">Deploy My Automation</button>
+                </div>
+            </div>
+
+            <!-- Step 5: Deployment -->
+            <div class="step" id="step5">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <h3>Deploying Your Automation...</h3>
+                    <p>Creating your personalized workflow copy...</p>
+                </div>
+            </div>
+
+            <!-- Step 6: Success -->
+            <div class="step" id="step6">
+                <div class="success-message">
+                    <div class="success-icon">✅</div>
+                    <h2>Automation Deployed Successfully!</h2>
+                    <p>Your personalized workflow is now active and running.</p>
+                    <div id="deploymentDetails"></div>
+                    <button class="btn" onclick="window.location.href='/'">Go to Dashboard</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="client-onboard.js"></script>
+</body>
+</html>

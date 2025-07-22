@@ -247,6 +247,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// Client onboarding page
+app.get('/onboard', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'client-onboard.html'));
+});
+
 // API Routes
 
 // Active N8N Workflows (Live Templates)
@@ -298,6 +303,192 @@ app.get('/api/active-workflows', async (req, res) => {
     });
   }
 });
+
+// Workflow details endpoint (for parameter analysis)
+app.get('/api/workflow-details/:id', async (req, res) => {
+  try {
+    const workflowId = req.params.id;
+    console.log(`🔍 Fetching workflow details for ID: ${workflowId}`);
+    
+    const workflow = await n8nClient.getWorkflow(workflowId);
+    console.log(`📊 Workflow details retrieved for: ${workflow.name}`);
+    
+    res.json(workflow);
+  } catch (error) {
+    console.error('❌ Error fetching workflow details:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch workflow details',
+      details: error.message 
+    });
+  }
+});
+
+// Client workflow deployment endpoint - THE CORE AUTOMATION FEATURE
+app.post('/api/deploy-client-workflow', async (req, res) => {
+  try {
+    const { template_id, client_data, config_data } = req.body;
+    
+    console.log('🚀 Starting client workflow deployment...');
+    console.log('📋 Template ID:', template_id);
+    console.log('👤 Client:', client_data.name);
+    
+    // Get the original workflow from n8n
+    const originalWorkflow = await n8nClient.getWorkflow(template_id);
+    console.log(`📥 Retrieved template workflow: ${originalWorkflow.name}`);
+    
+    // Create personalized workflow copy
+    const personalizedWorkflow = {
+      ...originalWorkflow,
+      name: `${originalWorkflow.name} - ${client_data.name}`,
+      // Remove ID to create new workflow
+      id: undefined,
+      // Update nodes with client-specific configuration
+      nodes: personalizeWorkflowNodes(originalWorkflow.nodes, config_data, client_data)
+    };
+    
+    console.log('🔧 Personalized workflow created');
+    
+    // Create the new workflow in n8n
+    const newWorkflow = await n8nClient.createWorkflow(personalizedWorkflow);
+    console.log(`✅ New workflow created with ID: ${newWorkflow.id}`);
+    
+    // Activate the workflow
+    await n8nClient.activateWorkflow(newWorkflow.id);
+    console.log('🟢 Workflow activated successfully');
+    
+    // Save client and deployment record to database
+    const client_id = uuidv4();
+    const deployment_id = uuidv4();
+    
+    // Insert client record
+    const clientSql = `
+      INSERT INTO clients (id, name, email, company, industry)
+      VALUES (?, ?, ?, ?, ?)
+    `;
+    
+    await new Promise((resolve, reject) => {
+      db.run(clientSql, [
+        client_id, 
+        client_data.name, 
+        client_data.email, 
+        client_data.company || client_data.name,
+        client_data.industry || 'Not specified'
+      ], function(err) {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    // Insert deployment record
+    const deploymentSql = `
+      INSERT INTO deployments (id, client_id, template_id, n8n_workflow_id, workflow_name, status, config_data)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    await new Promise((resolve, reject) => {
+      db.run(deploymentSql, [
+        deployment_id,
+        client_id,
+        template_id,
+        newWorkflow.id,
+        newWorkflow.name,
+        'active',
+        JSON.stringify(config_data)
+      ], function(err) {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+    
+    console.log('💾 Client and deployment records saved');
+    
+    res.json({
+      success: true,
+      workflow_id: newWorkflow.id,
+      workflow_name: newWorkflow.name,
+      client_id: client_id,
+      deployment_id: deployment_id,
+      status: 'active',
+      message: `Workflow successfully deployed for ${client_data.name}`
+    });
+    
+  } catch (error) {
+    console.error('❌ Client workflow deployment failed:', error);
+    res.status(500).json({
+      error: 'Workflow deployment failed',
+      details: error.message
+    });
+  }
+});
+
+// Helper function to personalize workflow nodes
+function personalizeWorkflowNodes(nodes, configData, clientData) {
+  return nodes.map(node => {
+    const personalizedNode = { ...node };
+    
+    // Update node parameters with client-specific data
+    if (personalizedNode.parameters) {
+      personalizedNode.parameters = personalizeParameters(
+        personalizedNode.parameters, 
+        configData, 
+        clientData
+      );
+    }
+    
+    // Update credentials if needed
+    if (personalizedNode.credentials) {
+      personalizedNode.credentials = personalizeCredentials(
+        personalizedNode.credentials,
+        configData,
+        clientData
+      );
+    }
+    
+    return personalizedNode;
+  });
+}
+
+function personalizeParameters(parameters, configData, clientData) {
+  const personalized = { ...parameters };
+  
+  // Common parameter substitutions
+  const substitutions = {
+    '{{CLIENT_NAME}}': clientData.name,
+    '{{CLIENT_EMAIL}}': clientData.email,
+    '{{CLIENT_COMPANY}}': clientData.company || clientData.name,
+    '{{CLIENT_INDUSTRY}}': clientData.industry || '',
+    ...configData
+  };
+  
+  // Recursively replace placeholders in parameters
+  function replaceInObject(obj) {
+    if (typeof obj === 'string') {
+      let result = obj;
+      Object.entries(substitutions).forEach(([placeholder, value]) => {
+        result = result.replace(new RegExp(placeholder, 'g'), value || '');
+      });
+      return result;
+    } else if (Array.isArray(obj)) {
+      return obj.map(replaceInObject);
+    } else if (obj && typeof obj === 'object') {
+      const newObj = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        newObj[key] = replaceInObject(value);
+      });
+      return newObj;
+    }
+    return obj;
+  }
+  
+  return replaceInObject(personalized);
+}
+
+function personalizeCredentials(credentials, configData, clientData) {
+  // For now, return credentials as-is
+  // In a full implementation, you'd create new credential instances
+  // with client-specific values
+  return credentials;
+}
 
 // Templates (Legacy - kept for manual templates)
 app.get('/api/templates', (req, res) => {
