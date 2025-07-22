@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF Integration Test - Taskforce Routes</title>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px;
+            margin: 0;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            font-size: 3em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.3em;
+            color: #6c757d;
+            margin-bottom: 30px;
+        }
+        
+        .status {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px 25px;
+            border-radius: 10px;
+            border: 1px solid #c3e6cb;
+            display: inline-block;
+            font-weight: 600;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+        
+        .test-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .test-card:hover {
+            transform: translateY(-5px);
+            border-color: #667eea;
+            box-shadow: 0 15px 35px rgba(102, 126, 234, 0.15);
+        }
+        
+        .test-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .test-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        
+        .test-route {
+            background: #667eea;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9em;
+            margin: 15px 0;
+            word-break: break-all;
+        }
+        
+        .test-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            margin: 10px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+        
+        .integration-status {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 10px;
+            padding: 30px;
+            margin: 30px 0;
+        }
+        
+        .integration-status h2 {
+            color: #856404;
+            margin-bottom: 20px;
+        }
+        
+        .integration-status ul {
+            color: #856404;
+            line-height: 1.8;
+        }
+        
+        .integration-status .ready {
+            color: #28a745;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 ETF Integration Test</h1>
+            <p>Testing taskforce-specific routing and onboarding flows</p>
+            <div class="status">✅ JavaScript Issues Fixed - Ready for Testing</div>
+        </div>
+        
+        <div class="integration-status">
+            <h2>🎯 Integration Status</h2>
+            <ul>
+                <li class="ready">✅ Fixed taskforce routing - each agent goes to correct onboarding</li>
+                <li class="ready">✅ JavaScript conflicts resolved</li>
+                <li class="ready">✅ Modal and tab functions working</li>
+                <li class="ready">✅ N8N integration code ready</li>
+                <li>🔧 Backend integration pending - copy server-additions.js to your PRISMITY server.js</li>
+                <li>🔧 Production deployment pending - push to your GitHub repository</li>
+            </ul>
+        </div>
+        
+        <div class="test-grid">
+            <div class="test-card">
+                <span class="test-icon">🦷</span>
+                <h3 class="test-title">Dental Office Taskforce</h3>
+                <div class="test-route">/taskforce/dental/onboard?type=dental</div>
+                <a href="/taskforce/dental/onboard?type=dental" class="test-btn">Test Dental Onboarding</a>
+            </div>
+            
+            <div class="test-card">
+                <span class="test-icon">🏋️</span>
+                <h3 class="test-title">Gym & Fitness Taskforce</h3>
+                <div class="test-route">/taskforce/gym/onboard?type=gym</div>
+                <a href="/taskforce/gym/onboard?type=gym" class="test-btn">Test Gym Onboarding</a>
+            </div>
+            
+            <div class="test-card">
+                <span class="test-icon">🔧</span>
+                <h3 class="test-title">Contractors Taskforce</h3>
+                <div class="test-route">/taskforce/contractors/onboard?type=contractors</div>
+                <a href="/taskforce/contractors/onboard?type=contractors" class="test-btn">Test Contractors Onboarding</a>
+            </div>
+            
+            <div class="test-card">
+                <span class="test-icon">📚</span>
+                <h3 class="test-title">Tutoring Centers Taskforce</h3>
+                <div class="test-route">/taskforce/tutoring/onboard?type=tutoring</div>
+                <a href="/taskforce/tutoring/onboard?type=tutoring" class="test-btn">Test Tutoring Onboarding</a>
+            </div>
+            
+            <div class="test-card">
+                <span class="test-icon">💆</span>
+                <h3 class="test-title">Massage Therapy Taskforce</h3>
+                <div class="test-route">/taskforce/massage/onboard?type=massage</div>
+                <a href="/taskforce/massage/onboard?type=massage" class="test-btn">Test Massage Onboarding</a>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 50px;">
+            <a href="/taskforce.html" class="test-btn" style="font-size: 1.1em; padding: 15px 30px;">🔙 Back to Taskforce Marketplace</a>
+        </div>
+    </div>
+</body>
+</html>

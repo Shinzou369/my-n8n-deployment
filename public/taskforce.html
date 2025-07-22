@@ -949,8 +949,20 @@
             tagsHtml += '<span class="tag">' + agent.tags[j] + "</span>";
           }
 
+          // Map agent IDs to taskforce types
+          var taskforceTypeMap = {
+            "local-contractors": "contractors",
+            "tutoring-centers": "tutoring", 
+            "dental-office": "dental",
+            "gym-fitness": "gym",
+            "massage-therapy": "massage"
+          };
+          
+          var taskforceType = taskforceTypeMap[agent.id] || 'dental';
+          var onboardUrl = "/taskforce/" + taskforceType + "/onboard?type=" + taskforceType;
+          
           htmlContent +=
-            '<div class="template-card" onclick="' + (agent.comingSoon ? 'window.location.href = "/taskforce/dental/onboard"' : 'selectTaskforceAgent(\'' + agent.id + '\')') + '">' +
+            '<div class="template-card" onclick="' + (agent.comingSoon ? 'window.location.href = "' + onboardUrl + '"' : 'selectTaskforceAgent(\'' + agent.id + '\')') + '">' +
             '<div class="card-icon">' +
             agent.icon +
             "</div>" +
@@ -966,7 +978,7 @@
             '<div class="card-arrow">→</div>' +
             (agent.comingSoon ?
               '<div class="coming-soon-overlay">' +
-              '<i class="overlay-icon lucide-clock"></i>' +
+              '<i class="overlay-icon lucide-rocket"></i>' +
               '<span class="overlay-text">Get Started!</span>' +
               '<span class="overlay-subtitle">Set up your taskforce today</span>' +
               '</div>'
