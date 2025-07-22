@@ -1,0 +1,48 @@
+### Project Brief for Replit Agent: Building My ETF Management Dashboard
+
+**1. My Goal: An Internal Backend Office for Ergovia TaskForce (ETF)**
+
+I need you to build an internal management dashboard. This tool will be my "backend office" for running my business. Its primary purpose is to help me manage, customize, and deploy my Ergovia TaskForce (ETF) workflows for my clients efficiently and without errors. This is an internal tool for me to use, not for my clients.
+
+**2. What is Ergovia TaskForce (ETF)?**
+
+ETF is my collection of pre-built, AI-powered n8n workflow templates. Each template, which I call a "Niche Agent," is designed to automate a specific business vertical. For example, I have a "Pet Clinic ETF" template that handles appointment reminders, customer queries, and other common tasks for a veterinary clinic. Each client will get their own separate, customized copy of a template, running on my server.
+
+**3. The Core Problem I Need to Solve**
+
+The primary motivation for this project is to create a "self-serve" platform for myself to overcome the limitations and dependencies of the n8n web interface. Even with a paid plan, the n8n website isn't the ideal environment for me to run and scale my operations. I need a custom solution that gives me full control.
+
+This dashboard will solve two major pain points:
+
+1.  **Execution & Management:** I need a way to run, trigger, and manage all my active client workflows from a single, centralized dashboard that I control, without having to log in and navigate the n8n UI for each task.
+
+2.  **Deployment & Scaling:** The current process for onboarding a new client is manual, slow, and error-prone. I have to duplicate a master template in n8n and then manually replace all the placeholder data for each new client. This dashboard must automate this entire process.
+
+**4. The Solution: The ETF Management Dashboard**
+
+I envision a simple, secure web application that acts as my central control panel. This dashboard will automate the entire client onboarding and workflow deployment process.
+
+Here’s the functionality I need:
+
+*   **Workflow Template Library:**
+    *   A section in the dashboard where I can see all my master ETF templates (e.g., "Pet Clinic ETF," "Real Estate ETF").
+
+*   **Client Management:**
+    *   A simple interface to add and manage my list of clients (e.g., "Dr. Smith's Pet Clinic," "Happy Paws Vet").
+
+*   **The "Deploy Workflow" Feature (The Most Important Part):**
+    *   This will be a guided process. I'll start by selecting a **Client** and a **Workflow Template**.
+    *   The dashboard will then present me with a clean form containing all the fields that need to be customized for that specific template (e.g., fields for OpenAI API Key, Google Calendar ID, Clinic Name, Support Email, etc.). This is a key feature that will help me fill up the needed information to run their workflow with the personal accounts the clients have.
+    *   After I fill out the form and hit "Deploy," the system will work in the background to:
+        1.  Use the n8n API to make a fresh copy of the selected master template.
+        2.  Inject all the client-specific data I just entered into the appropriate nodes and credentials of the new workflow.
+        3.  Rename the new workflow to something clear (e.g., "[Client Name] - Pet Clinic ETF").
+        4.  Activate the newly created workflow in n8n.
+
+**5. Your Task**
+
+Your job is to build this internal dashboard. This involves creating the frontend for me to interact with, the backend to handle the logic, and the crucial integration with the n8n API to automate the workflow duplication and configuration. The end result should be a tool that lets me onboard a new client and deploy their unique, customized workflow in minutes, not hours.
+
+**Future Considerations (Not for immediate implementation):**
+
+While the immediate goal is an internal tool, the architecture should be flexible enough to potentially support a client-facing self-service portal in the future. However, for now, the focus is solely on the internal dashboard.
