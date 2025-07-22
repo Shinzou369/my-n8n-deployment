@@ -82,16 +82,27 @@ function initializeDatabase() {
 }
 
 // N8N API Configuration
-const N8N_BASE_URL = process.env.N8N_BASE_URL || 'https://your-n8n-instance.onrender.com';
+const N8N_BASE_URL = process.env.N8N_BASE_URL || 'https://n8n-app-gvq5.onrender.com';
 const N8N_API_KEY = process.env.N8N_API_KEY || '';
 const N8N_EMAIL = process.env.N8N_EMAIL || 'admin';
 const N8N_PASSWORD = process.env.N8N_PASSWORD || '';
+
+// N8N Configuration Object
+const N8N_CONFIG = {
+  baseURL: N8N_BASE_URL,
+  auth: N8N_API_KEY ? { 
+    headers: { 'X-N8N-API-KEY': N8N_API_KEY } 
+  } : {
+    username: N8N_EMAIL,
+    password: N8N_PASSWORD
+  }
+};
 
 // N8N API Helper
 class N8NApiClient {
   constructor(config) {
     this.baseURL = config.baseURL;
-    this.auth = config.auth;
+    this.auth = config.auth || {};
   }
 
   async makeRequest(method, endpoint, data = null) {
@@ -103,9 +114,9 @@ class N8NApiClient {
       const config = {
         method,
         url: `${this.baseURL}/api/v1${endpoint}`,
-        auth: this.auth,
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          ...this.auth.headers
         },
         timeout: 10000,
         validateStatus: function (status) {
