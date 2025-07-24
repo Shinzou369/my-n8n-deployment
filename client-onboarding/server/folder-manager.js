@@ -61,8 +61,11 @@ class N8NFolderManager {
       
       const workflows = response.data.data;
       
+      // Filter out archived workflows
+      const activeWorkflows = workflows.filter(workflow => !workflow.archived);
+      
       // Auto-organize all workflows first to ensure proper folder placement
-      await this.autoOrganizeAllWorkflows(workflows);
+      await this.autoOrganizeAllWorkflows(activeWorkflows);
       
       const structure = {};
 
@@ -71,13 +74,14 @@ class N8NFolderManager {
         const workflowDetails = [];
         
         for (const workflowId of folderData.workflows) {
-          const workflow = workflows.find(w => w.id === workflowId);
+          const workflow = activeWorkflows.find(w => w.id === workflowId);
           if (workflow) {
             workflowDetails.push({
               id: workflow.id,
               name: workflow.name,
               active: workflow.active,
-              nodes: workflow.nodes?.length || 0
+              nodes: workflow.nodes?.length || 0,
+              archived: workflow.archived || false
             });
           }
         }
@@ -88,9 +92,9 @@ class N8NFolderManager {
         };
       }
 
-      // Add any remaining unorganized workflows
+      // Add any remaining unorganized workflows (excluding archived)
       const organizedIds = new Set(this.workflowFolders.keys());
-      const unorganized = workflows.filter(w => !organizedIds.has(w.id));
+      const unorganized = activeWorkflows.filter(w => !organizedIds.has(w.id));
       
       if (unorganized.length > 0) {
         // Try to organize these as well
@@ -151,12 +155,14 @@ class N8NFolderManager {
         const response = await axios.get(`${this.baseUrl}/api/v1/workflows`, {
           headers: { 'X-N8N-API-KEY': this.apiKey }
         });
-        workflows = response.data.data;
+        workflows = response.data.data.filter(w => !w.archived); // Exclude archived
       }
       
       for (const workflow of workflows) {
-        const folderPath = this.determineWorkflowFolder(workflow.name);
-        this.assignWorkflowToFolder(workflow.id, folderPath);
+        if (!workflow.archived) { // Double-check archived status
+          const folderPath = this.determineWorkflowFolder(workflow.name);
+          this.assignWorkflowToFolder(workflow.id, folderPath);
+        }
       }
       
       return true;
@@ -164,6 +170,30 @@ class N8NFolderManager {
       console.error('Auto-organize failed:', error);
       return false;
     }
+  }
+
+  // Delete empty folder
+  deleteFolder(folderPath) {
+    if (this.folders.has(folderPath)) {
+      const folderData = this.folders.get(folderPath);
+      
+      // Only allow deletion if folder is empty
+      if (folderData.workflows.length === 0) {
+        this.folders.delete(folderPath);
+        
+        // Remove workflow mappings for this folder
+        for (const [workflowId, path] of this.workflowFolders.entries()) {
+          if (path === folderPath) {
+            this.workflowFolders.delete(workflowId);
+          }
+        }
+        
+        return true;
+      } else {
+        throw new Error('Cannot delete folder with workflows. Move workflows first.');
+      }
+    }
+    return false;
   }
 
   // Auto-organize workflows based on naming convention (public method)

@@ -325,6 +325,33 @@ app.post('/api/auto-organize', async (req, res) => {
     }
 });
 
+// Delete empty folder
+app.delete('/api/folders/:folderPath', async (req, res) => {
+    try {
+        const folderPath = decodeURIComponent(req.params.folderPath);
+        
+        const deleted = folderManager.deleteFolder(folderPath);
+        
+        if (deleted) {
+            res.json({ 
+                success: true, 
+                message: `Folder "${folderPath}" deleted successfully` 
+            });
+        } else {
+            res.status(404).json({ 
+                success: false, 
+                error: 'Folder not found' 
+            });
+        }
+    } catch (error) {
+        console.error('Delete folder error:', error);
+        res.status(400).json({ 
+            success: false, 
+            error: error.message 
+        });
+    }
+});
+
 // Folder view page
 app.get('/folders', (req, res) => {
     res.sendFile(path.join(__dirname, '../public/folder-view.html'));

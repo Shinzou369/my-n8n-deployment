@@ -56,17 +56,12 @@
         .workflow-item { 
             margin: 8px 0; padding: 12px; background: white; border-radius: 6px; 
             border-left: 4px solid #007cba; display: flex; justify-content: space-between; 
-            align-items: center; cursor: grab; transition: all 0.3s ease;
+            align-items: center; transition: all 0.3s ease;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .workflow-item:hover { 
-            transform: translateY(-2px); 
+            transform: translateY(-1px); 
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            border-left-width: 6px;
-        }
-        .workflow-item.dragging { 
-            opacity: 0.6; cursor: grabbing; transform: rotate(5deg) scale(1.05);
-            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
         .workflow-active { border-left-color: #28a745; }
         .workflow-inactive { border-left-color: #dc3545; }
@@ -81,13 +76,28 @@
         }
         .workflow-status.active { background: #28a745; }
         
-        .workflow-actions { display: flex; gap: 8px; }
+        .workflow-actions { display: flex; gap: 8px; align-items: center; }
         .btn-small { 
             background: #6c757d; color: white; border: none; padding: 6px 12px; 
             border-radius: 4px; cursor: pointer; font-size: 0.8rem;
             transition: all 0.2s ease;
         }
         .btn-small:hover { background: #5a6268; transform: translateY(-1px); }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        
+        .folder-select { 
+            background: white; border: 1px solid #ddd; border-radius: 4px; 
+            padding: 4px 8px; font-size: 0.8rem; min-width: 120px;
+        }
+        .folder-actions { 
+            display: flex; gap: 8px; align-items: center; margin-top: 8px; 
+        }
+        .delete-folder-btn {
+            background: #dc3545; color: white; border: none; padding: 4px 8px;
+            border-radius: 4px; font-size: 0.7rem; cursor: pointer;
+        }
+        .delete-folder-btn:hover { background: #c82333; }
         
         .controls { 
             background: white; padding: 20px; border-radius: 12px; 
@@ -203,6 +213,8 @@
         }
 
         function displayFolders(folders) {
+            window.allFolders = folders; // Store for dropdown options
+            
             const templatesContainer = document.getElementById('templates-structure');
             const clientsContainer = document.getElementById('clients-structure');
             
@@ -217,6 +229,9 @@
             const clientFolders = {};
 
             for (const [path, folder] of Object.entries(folders)) {
+                // Filter out archived workflows
+                folder.workflows = folder.workflows.filter(w => !w.archived);
+                
                 const isClientFolder = folder.workflows.some(w => w.name.includes(' - ')) || 
                                      path.toLowerCase().includes('client');
                 
@@ -276,10 +291,14 @@
                     <span class="folder-badge">${folder.workflows.length}</span>
                 </div>
                 ${folder.workflows.length === 0 ? 
-                    '<div class="empty-state"><small>No workflows in this folder</small></div>' :
+                    `<div class="empty-state">
+                        <small>No workflows in this folder</small>
+                        <div class="folder-actions">
+                            <button class="delete-folder-btn" onclick="deleteFolder('${path}')">🗑️ Delete Empty Folder</button>
+                        </div>
+                    </div>` :
                     folder.workflows.map(workflow => `
                         <div class="workflow-item ${workflow.active ? 'workflow-active' : 'workflow-inactive'} ${type === 'template' ? 'workflow-template' : ''}" 
-                             draggable="true" 
                              data-workflow-id="${workflow.id}" 
                              data-workflow-name="${workflow.name}"
                              data-workflow-type="${type}">
@@ -291,20 +310,27 @@
                                 <div class="workflow-meta">${workflow.nodes} nodes • ${workflow.active ? 'Active' : 'Inactive'}</div>
                             </div>
                             <div class="workflow-actions">
+                                <select class="folder-select" onchange="moveWorkflowToFolder('${workflow.id}', '${workflow.name}', this.value)">
+                                    <option value="">Move to folder...</option>
+                                    ${generateFolderOptions(path, type)}
+                                </select>
                                 <button class="btn-small" onclick="viewWorkflow('${workflow.id}')">👁️ View</button>
-                                <button class="btn-small" onclick="moveWorkflow('${workflow.id}', '${workflow.name}')">📤 Move</button>
                             </div>
                         </div>
                     `).join('')
                 }
             `;
             
-            // Make folder a drop zone
-            folderDiv.addEventListener('dragover', handleDragOver);
-            folderDiv.addEventListener('drop', handleDrop);
-            folderDiv.addEventListener('dragleave', handleDragLeave);
-            
             return folderDiv;
+        }
+
+        function generateFolderOptions(currentPath, currentType) {
+            if (!window.allFolders) return '';
+            
+            return Object.keys(window.allFolders)
+                .filter(path => path !== currentPath) // Exclude current folder
+                .map(path => `<option value="${path}">${path}</option>`)
+                .join('');
         }
 
         async function autoOrganize() {
@@ -314,9 +340,7 @@
                 const result = await response.json();
                 if (result.success) {
                     showStatus('✅ Workflows auto-organized successfully!', 'success');
-                    loadFolders().then(() => {
-                        setTimeout(addDragListeners, 100);
-                    });
+                    loadFolders();
                 } else {
                     showStatus('❌ Auto-organize failed', 'error');
                 }
@@ -351,9 +375,7 @@
                 body: JSON.stringify({ folderPath })
             }).then(() => {
                 showStatus(`✅ Folder "${folderPath}" created!`, 'success');
-                loadFolders().then(() => {
-                    setTimeout(addDragListeners, 100);
-                });
+                loadFolders();
             }).catch(() => {
                 showStatus('❌ Failed to create folder', 'error');
             });
@@ -365,77 +387,20 @@
             window.open(`https://n8n-app-gvq5.onrender.com/workflow/${workflowId}`, '_blank');
         }
 
-        function moveWorkflow(workflowId, workflowName) {
-            const folderPath = prompt(`Move "${workflowName}" to folder:`);
-            if (folderPath) {
-                fetch(`/api/workflows/${workflowId}/move`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ folderPath })
-                }).then(() => {
-                    showStatus(`✅ Moved "${workflowName}" to "${folderPath}"`, 'success');
-                    loadFolders();
-                }).catch(() => {
-                    showStatus('❌ Failed to move workflow', 'error');
-                });
-            }
-        }
-
-        function showStatus(message, type) {
-            const status = document.getElementById('status');
-            status.innerHTML = `<div class="status ${type}">${message}</div>`;
-            setTimeout(() => status.innerHTML = '', 5000);
-        }
-
-        // Drag and drop functionality
-        let draggedWorkflow = null;
-
-        function handleDragStart(e) {
-            draggedWorkflow = {
-                id: e.target.dataset.workflowId,
-                name: e.target.dataset.workflowName
-            };
-            e.target.classList.add('dragging');
-        }
-
-        function handleDragEnd(e) {
-            e.target.classList.remove('dragging');
-            draggedWorkflow = null;
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-            e.currentTarget.classList.add('drag-over');
-        }
-
-        function handleDragLeave(e) {
-            if (!e.currentTarget.contains(e.relatedTarget)) {
-                e.currentTarget.classList.remove('drag-over');
-            }
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            e.currentTarget.classList.remove('drag-over');
+        async function moveWorkflowToFolder(workflowId, workflowName, targetFolderPath) {
+            if (!targetFolderPath) return;
             
-            if (draggedWorkflow) {
-                const targetFolder = e.currentTarget.dataset.folderPath;
-                moveWorkflowToFolder(draggedWorkflow.id, draggedWorkflow.name, targetFolder);
-            }
-        }
-
-        async function moveWorkflowToFolder(workflowId, workflowName, folderPath) {
             try {
-                showStatus(`Moving "${workflowName}" to "${folderPath}"...`, 'info');
+                showStatus(`Moving "${workflowName}" to "${targetFolderPath}"...`, 'info');
                 
                 const response = await fetch(`/api/workflows/${workflowId}/move`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ folderPath })
+                    body: JSON.stringify({ folderPath: targetFolderPath })
                 });
                 
                 if (response.ok) {
-                    showStatus(`✅ Moved "${workflowName}" to "${folderPath}"`, 'success');
+                    showStatus(`✅ Moved "${workflowName}" to "${targetFolderPath}"`, 'success');
                     loadFolders();
                 } else {
                     showStatus('❌ Failed to move workflow', 'error');
@@ -445,23 +410,39 @@
             }
         }
 
-        // Add event listeners after folders are loaded
-        function addDragListeners() {
-            document.querySelectorAll('.workflow-item[draggable="true"]').forEach(item => {
-                // Remove existing listeners to prevent duplicates
-                item.removeEventListener('dragstart', handleDragStart);
-                item.removeEventListener('dragend', handleDragEnd);
+        async function deleteFolder(folderPath) {
+            if (!confirm(`Are you sure you want to delete the folder "${folderPath}"? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                showStatus(`Deleting folder "${folderPath}"...`, 'info');
                 
-                // Add fresh listeners
-                item.addEventListener('dragstart', handleDragStart);
-                item.addEventListener('dragend', handleDragEnd);
-            });
+                const response = await fetch(`/api/folders/${encodeURIComponent(folderPath)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showStatus(`✅ Deleted folder "${folderPath}"`, 'success');
+                    loadFolders();
+                } else {
+                    showStatus('❌ Failed to delete folder', 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Failed to delete folder', 'error');
+            }
         }
 
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="status ${type}">${message}</div>`;
+            setTimeout(() => status.innerHTML = '', 5000);
+        }
+
+        // Removed drag and drop functionality in favor of dropdown selectors
+
         // Load folders on page load
-        loadFolders().then(() => {
-            setTimeout(addDragListeners, 100); // Small delay to ensure DOM is ready
-        });
+        loadFolders();
     </script>
 </body>
 </html>
