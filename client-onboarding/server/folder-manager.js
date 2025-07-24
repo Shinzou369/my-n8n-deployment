@@ -60,6 +60,10 @@ class N8NFolderManager {
       });
       
       const workflows = response.data.data;
+      
+      // Auto-organize all workflows first to ensure proper folder placement
+      await this.autoOrganizeAllWorkflows(workflows);
+      
       const structure = {};
 
       // Organize workflows by folder
@@ -84,23 +88,19 @@ class N8NFolderManager {
         };
       }
 
-      // Add unorganized workflows to "Uncategorized" folder
+      // Add any remaining unorganized workflows
       const organizedIds = new Set(this.workflowFolders.keys());
       const unorganized = workflows.filter(w => !organizedIds.has(w.id));
       
       if (unorganized.length > 0) {
-        structure['Uncategorized'] = {
-          name: 'Uncategorized',
-          path: 'Uncategorized',
-          workflows: unorganized.map(w => ({
-            id: w.id,
-            name: w.name,
-            active: w.active,
-            nodes: w.nodes?.length || 0
-          })),
-          subfolders: [],
-          created: new Date().toISOString()
-        };
+        // Try to organize these as well
+        for (const workflow of unorganized) {
+          const folderPath = this.determineWorkflowFolder(workflow.name);
+          this.assignWorkflowToFolder(workflow.id, folderPath);
+        }
+        
+        // Rebuild structure with newly organized workflows
+        return this.getFolderStructure();
       }
 
       return structure;
@@ -110,53 +110,68 @@ class N8NFolderManager {
     }
   }
 
-  // Auto-organize workflows based on naming convention
-  autoOrganizeWorkflows() {
-    return new Promise(async (resolve) => {
-      try {
+  // Determine appropriate folder for a workflow based on its name
+  determineWorkflowFolder(workflowName) {
+    const name = workflowName;
+    
+    // Check if it's a client workflow (contains " - " in name)
+    if (name.includes(' - ')) {
+      // Client workflow
+      if (name.includes('PET CLINIC')) {
+        return 'Clients/Pet Clinic Clients';
+      } else if (name.includes('REAL ESTATE')) {
+        return 'Clients/Real Estate Clients';
+      } else if (name.includes('RESTAURANT')) {
+        return 'Clients/Restaurant Clients';
+      } else {
+        return 'Clients/General Clients';
+      }
+    } else {
+      // Template workflow
+      if (name.includes('PET CLINIC')) {
+        return 'Templates/Pet Clinic Templates';
+      } else if (name.includes('REAL ESTATE')) {
+        return 'Templates/Real Estate Templates';
+      } else if (name.includes('RESTAURANT')) {
+        return 'Templates/Restaurant Templates';
+      } else if (name.includes('TEMPLATE') || name === name.toUpperCase()) {
+        return 'Templates/General Templates';
+      } else if (name.includes('TEST') || name.includes('test')) {
+        return 'Templates/Development/Testing';
+      } else {
+        return 'Templates/Uncategorized';
+      }
+    }
+  }
+
+  // Auto-organize workflows without requiring manual trigger
+  async autoOrganizeAllWorkflows(workflows = null) {
+    try {
+      if (!workflows) {
         const response = await axios.get(`${this.baseUrl}/api/v1/workflows`, {
           headers: { 'X-N8N-API-KEY': this.apiKey }
         });
-        
-        const workflows = response.data.data;
-        
-        for (const workflow of workflows) {
-          const name = workflow.name;
-          let folderPath = 'Uncategorized';
-          
-          // Check if it's a client workflow (contains " - " in name)
-          if (name.includes(' - ')) {
-            // Client workflow
-            if (name.includes('PET CLINIC')) {
-              folderPath = 'Clients/Pet Clinic Clients';
-            } else if (name.includes('REAL ESTATE')) {
-              folderPath = 'Clients/Real Estate Clients';
-            } else if (name.includes('RESTAURANT')) {
-              folderPath = 'Clients/Restaurant Clients';
-            } else {
-              folderPath = 'Clients/General Clients';
-            }
-          } else {
-            // Template workflow
-            if (name.includes('PET CLINIC')) {
-              folderPath = 'Templates/Pet Clinic Templates';
-            } else if (name.includes('REAL ESTATE')) {
-              folderPath = 'Templates/Real Estate Templates';
-            } else if (name.includes('RESTAURANT')) {
-              folderPath = 'Templates/Restaurant Templates';
-            } else if (name.includes('TEMPLATE') || name === name.toUpperCase()) {
-              folderPath = 'Templates/General Templates';
-            } else if (name.includes('TEST') || name.includes('test')) {
-              folderPath = 'Templates/Development/Testing';
-            } else {
-              folderPath = 'Templates/Uncategorized';
-            }
-          }
-          
-          this.assignWorkflowToFolder(workflow.id, folderPath);
-        }
-        
-        resolve(true);
+        workflows = response.data.data;
+      }
+      
+      for (const workflow of workflows) {
+        const folderPath = this.determineWorkflowFolder(workflow.name);
+        this.assignWorkflowToFolder(workflow.id, folderPath);
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Auto-organize failed:', error);
+      return false;
+    }
+  }
+
+  // Auto-organize workflows based on naming convention (public method)
+  autoOrganizeWorkflows() {
+    return new Promise(async (resolve) => {
+      try {
+        const success = await this.autoOrganizeAllWorkflows();
+        resolve(success);
       } catch (error) {
         console.error('Auto-organize failed:', error);
         resolve(false);

@@ -160,6 +160,16 @@ app.post('/api/onboard', async (req, res) => {
             );
         }
 
+        // Auto-organize workflows after creation to ensure proper folder placement
+        if (result.success) {
+            try {
+                await folderManager.autoOrganizeAllWorkflows();
+                console.log('📁 Workflows automatically organized into folders');
+            } catch (error) {
+                console.log('⚠️ Folder organization warning:', error.message);
+            }
+        }
+
         // Update submission status
         submission.status = result.success ? 'completed' : 'failed';
         submission.workflowResult = result;
