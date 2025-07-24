@@ -51,11 +51,11 @@ app.get('/admin', (req, res) => {
 app.get('/api/templates', async (req, res) => {
     try {
         const templates = await duplicator.getTemplateWorkflows();
-        
+
         // Add your PET CLINIC as a template even if it doesn't end with _TEMPLATE
         const workflows = await duplicator.getWorkflows();
         const petClinicWorkflow = workflows.find(w => w.id === PET_CLINIC_TEMPLATE_ID);
-        
+
         if (petClinicWorkflow && !templates.find(t => t.id === PET_CLINIC_TEMPLATE_ID)) {
             templates.push({
                 ...petClinicWorkflow,
@@ -63,7 +63,7 @@ app.get('/api/templates', async (req, res) => {
                 isMainTemplate: true
             });
         }
-        
+
         res.json({
             success: true,
             templates: templates.map(t => ({
@@ -90,20 +90,20 @@ app.post('/api/onboard', async (req, res) => {
     try {
         const clientData = req.body;
         const submissionId = generateUUID();
-        
+
         console.log('📝 New client submission received:', clientData.businessName);
-        
+
         // Validate required fields
         const requiredFields = ['businessName', 'contactEmail', 'phoneNumber'];
         const missingFields = requiredFields.filter(field => !clientData[field]);
-        
+
         if (missingFields.length > 0) {
             return res.status(400).json({
                 success: false,
                 error: `Missing required fields: ${missingFields.join(', ')}`
             });
         }
-        
+
         // Prepare client data for workflow duplication
         const workflowClientData = {
             name: clientData.businessName,
@@ -122,7 +122,7 @@ app.post('/api/onboard', async (req, res) => {
                 '{{SOCIAL_MEDIA}}': clientData.socialMedia || ''
             }
         };
-        
+
         // Store submission
         const submission = {
             id: submissionId,
@@ -130,11 +130,11 @@ app.post('/api/onboard', async (req, res) => {
             submittedAt: new Date().toISOString(),
             status: 'processing'
         };
-        
+
         clientSubmissions.push(submission);
-        
+
         console.log('🔄 Starting workflow duplication...');
-        
+
         // Duplicate the workflow
         const result = await duplicator.duplicateWorkflow(
             PET_CLINIC_TEMPLATE_ID,
@@ -144,15 +144,15 @@ app.post('/api/onboard', async (req, res) => {
                 nameSuffix: clientData.businessName
             }
         );
-        
+
         // Update submission status
         submission.status = result.success ? 'completed' : 'failed';
         submission.workflowResult = result;
-        
+
         if (result.success) {
             console.log('✅ Workflow created successfully:', result.workflowName);
             console.log('🆔 New workflow ID:', result.newWorkflowId);
-            
+
             res.json({
                 success: true,
                 message: 'Workflow created successfully!',
@@ -163,14 +163,14 @@ app.post('/api/onboard', async (req, res) => {
             });
         } else {
             console.log('❌ Workflow creation failed:', result.error);
-            
+
             res.status(500).json({
                 success: false,
                 error: result.error || 'Failed to create workflow',
                 submissionId: submissionId
             });
         }
-        
+
     } catch (error) {
         console.error('💥 Onboarding error:', error);
         res.status(500).json({
@@ -201,7 +201,7 @@ app.get('/api/n8n/status', async (req, res) => {
     try {
         const workflows = await duplicator.getWorkflows();
         const activeWorkflows = workflows.filter(w => w.active);
-        
+
         res.json({
             success: true,
             n8nUrl: process.env.N8N_BASE_URL,
@@ -227,4 +227,59 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 Client Onboarding Server running on port ${PORT}`);
     console.log(`🔗 N8N Instance: ${process.env.N8N_BASE_URL}`);
     console.log(`📋 Template Workflow ID: ${PET_CLINIC_TEMPLATE_ID}`);
+});
+const N8NFolderManager = require('./folder-manager');
+
+// Initialize folder manager
+const folderManager = new N8NFolderManager(
+  process.env.N8N_BASE_URL,
+  process.env.N8N_API_KEY
+);
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    n8n_url: process.env.N8N_BASE_URL,
+    template_id: TEMPLATE_WORKFLOW_ID
+  });
+});
+
+// Folder management endpoints
+app.get('/api/folders', async (req, res) => {
+  try {
+    const structure = await folderManager.getFolderStructure();
+    res.json(structure);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get folder structure' });
+  }
+});
+
+app.post('/api/folders', async (req, res) => {
+  try {
+    const { folderPath } = req.body;
+    const folder = folderManager.createFolder(folderPath);
+    res.json(folder);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create folder' });
+  }
+});
+
+app.post('/api/workflows/:id/move', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { folderPath } = req.body;
+    folderManager.assignWorkflowToFolder(id, folderPath);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to move workflow' });
+  }
+});
+
+app.post('/api/auto-organize', async (req, res) => {
+  try {
+    const success = await folderManager.autoOrganizeWorkflows();
+    res.json({ success });
+  } catch (error) {
+    res.status(500).json({ error: 'Auto-organize failed' });
+  }
 });
