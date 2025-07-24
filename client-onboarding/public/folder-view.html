@@ -10,12 +10,19 @@
         .container { max-width: 1200px; margin: 0 auto; }
         .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .folder-tree { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .folder { margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background: #f9f9f9; }
+        .folder { 
+            margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; 
+            background: #f9f9f9; min-height: 60px; transition: all 0.2s ease;
+        }
         .folder-name { font-weight: bold; color: #333; margin-bottom: 10px; }
         .workflow-item { 
             margin: 5px 0; padding: 8px; background: white; border-radius: 3px; border-left: 3px solid #007cba;
             display: flex; justify-content: space-between; align-items: center;
+            cursor: grab; transition: all 0.2s ease;
         }
+        .workflow-item:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+        .workflow-item.dragging { opacity: 0.5; cursor: grabbing; }
+        .folder.drag-over { background: #e3f2fd; border: 2px dashed #007cba; }
         .workflow-active { border-left-color: #28a745; }
         .workflow-inactive { border-left-color: #dc3545; }
         .controls { margin: 20px 0; }
@@ -75,7 +82,10 @@
                 folderDiv.innerHTML = `
                     <div class="folder-name">📁 ${folder.name} (${folder.workflows.length} workflows)</div>
                     ${folder.workflows.map(workflow => `
-                        <div class="workflow-item ${workflow.active ? 'workflow-active' : 'workflow-inactive'}">
+                        <div class="workflow-item ${workflow.active ? 'workflow-active' : 'workflow-inactive'}" 
+                             draggable="true" 
+                             data-workflow-id="${workflow.id}" 
+                             data-workflow-name="${workflow.name}">
                             <span>
                                 ${workflow.active ? '🟢' : '🔴'} ${workflow.name} 
                                 <small>(${workflow.nodes} nodes)</small>
@@ -86,6 +96,12 @@
                         </div>
                     `).join('')}
                 `;
+                
+                // Make folder a drop zone
+                folderDiv.setAttribute('data-folder-path', path);
+                folderDiv.addEventListener('dragover', handleDragOver);
+                folderDiv.addEventListener('drop', handleDrop);
+                folderDiv.addEventListener('dragleave', handleDragLeave);
                 
                 container.appendChild(folderDiv);
             }
@@ -98,7 +114,9 @@
                 const result = await response.json();
                 if (result.success) {
                     showStatus('✅ Workflows auto-organized successfully!', 'success');
-                    loadFolders();
+                    loadFolders().then(() => {
+                        setTimeout(addDragListeners, 100);
+                    });
                 } else {
                     showStatus('❌ Auto-organize failed', 'error');
                 }
@@ -116,7 +134,9 @@
                     body: JSON.stringify({ folderPath })
                 }).then(() => {
                     showStatus(`✅ Folder "${folderPath}" created!`, 'success');
-                    loadFolders();
+                    loadFolders().then(() => {
+                        setTimeout(addDragListeners, 100);
+                    });
                 }).catch(() => {
                     showStatus('❌ Failed to create folder', 'error');
                 });
@@ -145,8 +165,76 @@
             setTimeout(() => status.innerHTML = '', 5000);
         }
 
+        // Drag and drop functionality
+        let draggedWorkflow = null;
+
+        function handleDragStart(e) {
+            draggedWorkflow = {
+                id: e.target.dataset.workflowId,
+                name: e.target.dataset.workflowName
+            };
+            e.target.classList.add('dragging');
+        }
+
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedWorkflow = null;
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.currentTarget.classList.add('drag-over');
+        }
+
+        function handleDragLeave(e) {
+            if (!e.currentTarget.contains(e.relatedTarget)) {
+                e.currentTarget.classList.remove('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.currentTarget.classList.remove('drag-over');
+            
+            if (draggedWorkflow) {
+                const targetFolder = e.currentTarget.dataset.folderPath;
+                moveWorkflowToFolder(draggedWorkflow.id, draggedWorkflow.name, targetFolder);
+            }
+        }
+
+        async function moveWorkflowToFolder(workflowId, workflowName, folderPath) {
+            try {
+                showStatus(`Moving "${workflowName}" to "${folderPath}"...`, 'info');
+                
+                const response = await fetch(`/api/workflows/${workflowId}/move`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ folderPath })
+                });
+                
+                if (response.ok) {
+                    showStatus(`✅ Moved "${workflowName}" to "${folderPath}"`, 'success');
+                    loadFolders();
+                } else {
+                    showStatus('❌ Failed to move workflow', 'error');
+                }
+            } catch (error) {
+                showStatus('❌ Failed to move workflow', 'error');
+            }
+        }
+
+        // Add event listeners after folders are loaded
+        function addDragListeners() {
+            document.querySelectorAll('.workflow-item[draggable="true"]').forEach(item => {
+                item.addEventListener('dragstart', handleDragStart);
+                item.addEventListener('dragend', handleDragEnd);
+            });
+        }
+
         // Load folders on page load
-        loadFolders();
+        loadFolders().then(() => {
+            setTimeout(addDragListeners, 100); // Small delay to ensure DOM is ready
+        });
     </script>
 </body>
 </html>

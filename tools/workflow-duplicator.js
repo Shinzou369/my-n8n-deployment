@@ -221,6 +221,110 @@ class N8NWorkflowDuplicator {
     }
 
     /**
+     * Duplicate entire folder of workflows for ETF (multiple workflow setup)
+     * @param {string} folderPath - Virtual folder path containing template workflows
+     * @param {Object} clientData - Client information for personalization
+     * @param {Object} options - Additional options
+     * @return {Object} Result with all created workflows
+     */
+    async duplicateWorkflowFolder(folderPath, clientData, options = {}) {
+        console.log(`🗂️ Duplicating folder: ${folderPath} for client: ${clientData.name}`);
+        
+        try {
+            // Get all workflows from the folder (this would need folder manager integration)
+            const allWorkflows = await this.getWorkflows();
+            
+            // For now, simulate folder-based selection by workflow naming pattern
+            // In a real implementation, this would use the FolderManager
+            let folderWorkflows = [];
+            
+            if (folderPath.includes('PET CLINIC')) {
+                folderWorkflows = allWorkflows.filter(w => 
+                    w.name.includes('PET CLINIC') && 
+                    !w.name.includes(' - ') && // Exclude client instances
+                    w.name !== 'PET CLINIC' // Exclude the main template for now
+                );
+                
+                // Always include the main PET CLINIC template
+                const mainTemplate = allWorkflows.find(w => w.name === 'PET CLINIC');
+                if (mainTemplate) {
+                    folderWorkflows.unshift(mainTemplate);
+                }
+            }
+            
+            console.log(`📋 Found ${folderWorkflows.length} workflows in folder`);
+            
+            const results = {
+                success: true,
+                folderPath,
+                clientName: clientData.name,
+                createdWorkflows: [],
+                errors: []
+            };
+            
+            // Duplicate each workflow in the folder
+            for (const template of folderWorkflows) {
+                try {
+                    console.log(`🔄 Duplicating: ${template.name}`);
+                    
+                    const workflowResult = await this.duplicateWorkflow(
+                        template.id, 
+                        clientData, 
+                        { 
+                            activate: options.activate !== false,
+                            nameSuffix: clientData.name
+                        }
+                    );
+                    
+                    if (workflowResult.success) {
+                        results.createdWorkflows.push({
+                            originalId: template.id,
+                            originalName: template.name,
+                            newId: workflowResult.newWorkflowId,
+                            newName: workflowResult.workflowName,
+                            active: options.activate !== false
+                        });
+                        console.log(`✅ Created: ${workflowResult.workflowName}`);
+                    } else {
+                        results.errors.push({
+                            workflowName: template.name,
+                            error: workflowResult.error
+                        });
+                    }
+                    
+                    // Small delay between duplications to avoid overwhelming N8N
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    
+                } catch (error) {
+                    console.error(`❌ Failed to duplicate ${template.name}:`, error.message);
+                    results.errors.push({
+                        workflowName: template.name,
+                        error: error.message
+                    });
+                }
+            }
+            
+            // Determine overall success
+            results.success = results.createdWorkflows.length > 0;
+            results.summary = `Created ${results.createdWorkflows.length} workflows with ${results.errors.length} errors`;
+            
+            console.log(`📊 Folder duplication complete: ${results.summary}`);
+            return results;
+            
+        } catch (error) {
+            console.error('❌ Folder duplication failed:', error.message);
+            return {
+                success: false,
+                folderPath,
+                clientName: clientData.name,
+                error: error.message,
+                createdWorkflows: [],
+                errors: [{ error: error.message }]
+            };
+        }
+    }
+
+    /**
      * Export workflow to JSON file
      */
     async exportWorkflow(workflowId, outputPath) {

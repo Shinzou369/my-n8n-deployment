@@ -135,39 +135,73 @@ app.post('/api/onboard', async (req, res) => {
 
         console.log('🔄 Starting workflow duplication...');
 
-        // Duplicate the workflow
-        const result = await duplicator.duplicateWorkflow(
-            PET_CLINIC_TEMPLATE_ID,
-            workflowClientData,
-            { 
-                activate: true,
-                nameSuffix: clientData.businessName
-            }
-        );
+        // Check if this is an ETF (multi-workflow) setup
+        const isETFSetup = clientData.workflowType === 'etf' || clientData.multipleWorkflows === true;
+        
+        let result;
+        if (isETFSetup) {
+            console.log('🗂️ ETF Setup: Duplicating entire folder of workflows...');
+            // Duplicate entire folder for ETF setups
+            result = await duplicator.duplicateWorkflowFolder(
+                'Business/Pet Clinics', // Folder path
+                workflowClientData,
+                { activate: true }
+            );
+        } else {
+            console.log('📋 Single workflow duplication...');
+            // Single workflow duplication
+            result = await duplicator.duplicateWorkflow(
+                PET_CLINIC_TEMPLATE_ID,
+                workflowClientData,
+                { 
+                    activate: true,
+                    nameSuffix: clientData.businessName
+                }
+            );
+        }
 
         // Update submission status
         submission.status = result.success ? 'completed' : 'failed';
         submission.workflowResult = result;
 
         if (result.success) {
-            console.log('✅ Workflow created successfully:', result.workflowName);
-            console.log('🆔 New workflow ID:', result.newWorkflowId);
+            if (isETFSetup && result.createdWorkflows) {
+                console.log(`✅ ETF Setup completed: ${result.createdWorkflows.length} workflows created`);
+                console.log('📋 Created workflows:', result.createdWorkflows.map(w => w.newName).join(', '));
 
-            res.json({
-                success: true,
-                message: 'Workflow created successfully!',
-                submissionId: submissionId,
-                workflowName: result.workflowName,
-                workflowId: result.newWorkflowId,
-                n8nUrl: `${process.env.N8N_BASE_URL}/workflow/${result.newWorkflowId}`
-            });
+                res.json({
+                    success: true,
+                    message: `ETF Setup completed! ${result.createdWorkflows.length} workflows created.`,
+                    submissionId: submissionId,
+                    workflowType: 'etf',
+                    createdWorkflows: result.createdWorkflows,
+                    summary: result.summary,
+                    n8nUrl: process.env.N8N_BASE_URL,
+                    firstWorkflowUrl: result.createdWorkflows.length > 0 ? 
+                        `${process.env.N8N_BASE_URL}/workflow/${result.createdWorkflows[0].newId}` : null
+                });
+            } else {
+                console.log('✅ Workflow created successfully:', result.workflowName);
+                console.log('🆔 New workflow ID:', result.newWorkflowId);
+
+                res.json({
+                    success: true,
+                    message: 'Workflow created successfully!',
+                    submissionId: submissionId,
+                    workflowType: 'single',
+                    workflowName: result.workflowName,
+                    workflowId: result.newWorkflowId,
+                    n8nUrl: `${process.env.N8N_BASE_URL}/workflow/${result.newWorkflowId}`
+                });
+            }
         } else {
             console.log('❌ Workflow creation failed:', result.error);
 
             res.status(500).json({
                 success: false,
-                error: result.error || 'Failed to create workflow',
-                submissionId: submissionId
+                error: result.error || 'Failed to create workflow(s)',
+                submissionId: submissionId,
+                workflowType: isETFSetup ? 'etf' : 'single'
             });
         }
 
@@ -232,16 +266,88 @@ const N8NFolderManager = require('./folder-manager');
 
 // Initialize folder manager
 const folderManager = new N8NFolderManager(
-  process.env.N8N_BASE_URL,
-  process.env.N8N_API_KEY
+    process.env.N8N_BASE_URL,
+    process.env.N8N_API_KEY
 );
+
+// Folder management endpoints
+app.get('/api/folders', async (req, res) => {
+    try {
+        const folders = await folderManager.getFolderStructure();
+        res.json(folders);
+    } catch (error) {
+        console.error('Error getting folders:', error);
+        res.status(500).json({ success: false, error: 'Failed to get folders' });
+    }
+});
+
+app.post('/api/folders', async (req, res) => {
+    try {
+        const { folderPath } = req.body;
+        const folder = folderManager.createFolder(folderPath);
+        res.json({ success: true, folder });
+    } catch (error) {
+        console.error('Error creating folder:', error);
+        res.status(500).json({ success: false, error: 'Failed to create folder' });
+    }
+});
+
+app.post('/api/workflows/:workflowId/move', async (req, res) => {
+    try {
+        const { workflowId } = req.params;
+        const { folderPath } = req.body;
+        
+        folderManager.assignWorkflowToFolder(workflowId, folderPath);
+        res.json({ success: true, message: 'Workflow moved successfully' });
+    } catch (error) {
+        console.error('Error moving workflow:', error);
+        res.status(500).json({ success: false, error: 'Failed to move workflow' });
+    }
+});
+
+app.post('/api/auto-organize', async (req, res) => {
+    try {
+        const success = await folderManager.autoOrganizeWorkflows();
+        res.json({ success, message: success ? 'Auto-organized successfully' : 'Auto-organize failed' });
+    } catch (error) {
+        console.error('Error auto-organizing:', error);
+        res.status(500).json({ success: false, error: 'Failed to auto-organize' });
+    }
+});
+
+// Folder view page
+app.get('/folders', (req, res) => {
+    res.sendFile(path.join(__dirname, '../public/folder-view.html'));
+});
+
+// ETF onboarding endpoint (for multiple workflow setups)
+app.post('/api/onboard-etf', async (req, res) => {
+    try {
+        const clientData = { ...req.body, workflowType: 'etf', multipleWorkflows: true };
+        
+        // Reuse the existing onboard logic but force ETF mode
+        req.body = clientData;
+        
+        // Call the existing onboard handler
+        return app._router.handle(req, res);
+        
+    } catch (error) {
+        console.error('ETF onboarding error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Failed to process ETF onboarding'
+        });
+    }
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
-    n8n_url: process.env.N8N_BASE_URL,
-    template_id: TEMPLATE_WORKFLOW_ID
-  });
+    res.json({ 
+        status: 'OK', 
+        n8n_url: process.env.N8N_BASE_URL,
+        template_id: PET_CLINIC_TEMPLATE_ID,
+        features: ['single-workflow', 'etf-multi-workflow', 'drag-drop-folders']
+    });
 });
 
 // Folder management endpoints

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF Multi-Workflow Onboarding</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+        .form-section { background: white; padding: 30px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input, .form-group select, .form-group textarea { 
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; box-sizing: border-box;
+        }
+        .checkbox-group { display: flex; align-items: center; margin: 10px 0; }
+        .checkbox-group input[type="checkbox"] { width: auto; margin-right: 10px; }
+        .workflow-preview { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #007cba; }
+        .btn { background: #007cba; color: white; border: none; padding: 15px 30px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+        .btn:hover { background: #005a8b; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .result { padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .workflow-list { margin: 15px 0; }
+        .workflow-item { background: white; padding: 10px; margin: 5px 0; border-radius: 3px; border-left: 3px solid #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏢 ETF Multi-Workflow Setup</h1>
+            <p>Deploy complete automation suites with multiple interconnected workflows</p>
+            <div class="workflow-preview">
+                <strong>What you'll get:</strong> Instead of just one workflow, you'll receive a complete automation suite with multiple workflows that work together to cover all aspects of your business operations.
+            </div>
+        </div>
+
+        <form id="etfOnboardingForm">
+            <div class="form-section">
+                <h2>📋 Business Information</h2>
+                
+                <div class="form-group">
+                    <label for="businessName">Business Name *</label>
+                    <input type="text" id="businessName" name="businessName" required 
+                           placeholder="Your Clinic Name">
+                </div>
+
+                <div class="form-group">
+                    <label for="contactEmail">Contact Email *</label>
+                    <input type="email" id="contactEmail" name="contactEmail" required 
+                           placeholder="contact@yourclinic.com">
+                </div>
+
+                <div class="form-group">
+                    <label for="phoneNumber">Phone Number *</label>
+                    <input type="tel" id="phoneNumber" name="phoneNumber" required 
+                           placeholder="+1-555-123-4567">
+                </div>
+
+                <div class="form-group">
+                    <label for="businessType">Business Type</label>
+                    <select id="businessType" name="businessType">
+                        <option value="Pet Clinic">Pet Clinic</option>
+                        <option value="Real Estate">Real Estate</option>
+                        <option value="Restaurant">Restaurant</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>🛠️ Workflow Suite Configuration</h2>
+                
+                <div class="workflow-preview">
+                    <h3>📦 Complete Pet Clinic Suite Includes:</h3>
+                    <div class="workflow-list">
+                        <div class="workflow-item">🩺 Main Pet Clinic Workflow - Core appointment and customer management</div>
+                        <div class="workflow-item">📅 Appointment Reminder System - Automated booking confirmations and reminders</div>
+                        <div class="workflow-item">💬 Customer Service Bot - 24/7 automated customer support</div>
+                        <div class="workflow-item">📊 Analytics & Reporting - Business insights and performance tracking</div>
+                        <div class="workflow-item">🔔 Emergency Alert System - Critical notifications and urgent care routing</div>
+                    </div>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="activateAll" name="activateAll" checked>
+                    <label for="activateAll">Activate all workflows immediately after creation</label>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="autoOrganize" name="autoOrganize" checked>
+                    <label for="autoOrganize">Automatically organize workflows into business-specific folders</label>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>⚙️ Integration Settings</h2>
+                
+                <div class="form-group">
+                    <label for="telegramBotToken">Telegram Bot Token (Optional)</label>
+                    <input type="text" id="telegramBotToken" name="telegramBotToken" 
+                           placeholder="1234567890:ABCDEF...">
+                </div>
+
+                <div class="form-group">
+                    <label for="telegramChatId">Telegram Chat ID (Optional)</label>
+                    <input type="text" id="telegramChatId" name="telegramChatId" 
+                           placeholder="-1001234567890">
+                </div>
+
+                <div class="form-group">
+                    <label for="businessAddress">Business Address</label>
+                    <textarea id="businessAddress" name="businessAddress" rows="3" 
+                              placeholder="123 Main Street, City, State 12345"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="websiteUrl">Website URL</label>
+                    <input type="url" id="websiteUrl" name="websiteUrl" 
+                           placeholder="https://yourclinic.com">
+                </div>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                🚀 Deploy Complete Workflow Suite
+            </button>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('etfOnboardingForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const resultDiv = document.getElementById('result');
+            
+            // Disable submit button
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Creating workflow suite...';
+            
+            // Collect form data
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            
+            // Set ETF flags
+            data.workflowType = 'etf';
+            data.multipleWorkflows = true;
+            
+            try {
+                const response = await fetch('/api/onboard', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.workflowType === 'etf' && result.createdWorkflows) {
+                        resultDiv.innerHTML = `
+                            <div class="result success">
+                                <h3>🎉 ETF Workflow Suite Created Successfully!</h3>
+                                <p><strong>Business:</strong> ${data.businessName}</p>
+                                <p><strong>Summary:</strong> ${result.summary}</p>
+                                
+                                <h4>📋 Created Workflows:</h4>
+                                <div class="workflow-list">
+                                    ${result.createdWorkflows.map(w => `
+                                        <div class="workflow-item">
+                                            ✅ ${w.newName}
+                                            <br><small>ID: ${w.newId} | Status: ${w.active ? 'Active' : 'Inactive'}</small>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                                
+                                <p>
+                                    <strong>🔗 Access your workflows:</strong> 
+                                    <a href="${result.n8nUrl}" target="_blank">Open N8N Dashboard</a>
+                                </p>
+                                
+                                ${result.firstWorkflowUrl ? `
+                                    <p>
+                                        <strong>🚀 Start with:</strong>
+                                        <a href="${result.firstWorkflowUrl}" target="_blank">View Main Workflow</a>
+                                    </p>
+                                ` : ''}
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="result success">
+                                <h3>✅ Workflow Created Successfully!</h3>
+                                <p><strong>Workflow:</strong> ${result.workflowName}</p>
+                                <p><strong>N8N URL:</strong> <a href="${result.n8nUrl}" target="_blank">Open Workflow</a></p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            <h3>❌ Setup Failed</h3>
+                            <p><strong>Error:</strong> ${result.error}</p>
+                            <p>Please try again or contact support.</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        <h3>❌ Connection Error</h3>
+                        <p>Failed to connect to the server. Please try again.</p>
+                    </div>
+                `;
+            } finally {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Deploy Complete Workflow Suite';
+            }
+        });
+    </script>
+</body>
+</html>
