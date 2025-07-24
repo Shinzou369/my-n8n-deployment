@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ETF Workflow Personalization - Client Onboarding</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2196F3, #21CBF3);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .form-container {
+            padding: 40px 30px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 10px;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .step.active {
+            background: #2196F3;
+            color: white;
+        }
+
+        .step.completed {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .form-section {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        .form-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .form-group small {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .btn-success {
+            background: #4CAF50;
+            color: white;
+            width: 100%;
+            font-size: 18px;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #2196F3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .success-message {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #4CAF50;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .success-message h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        .success-message p {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+
+        .success-details {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+
+        .admin-link {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+
+        .admin-link:hover {
+            background: #1976D2;
+        }
+
+        .error-message {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .required {
+            color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ETF Workflow Setup</h1>
+            <p>Personalize your automated workflow in just a few steps</p>
+        </div>
+
+        <div class="form-container">
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step active" data-step="1">1</div>
+                <div class="step" data-step="2">2</div>
+                <div class="step" data-step="3">3</div>
+                <div class="step" data-step="4">4</div>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="error-message"></div>
+
+            <!-- Step 1: Business Information -->
+            <div class="form-section active" data-section="1">
+                <h2>Business Information</h2>
+                <div class="form-group">
+                    <label for="businessName">Business Name <span class="required">*</span></label>
+                    <input type="text" id="businessName" required>
+                    <small>This will appear in all your automated messages</small>
+                </div>
+                <div class="form-group">
+                    <label for="businessType">Business Type</label>
+                    <select id="businessType">
+                        <option value="Pet Clinic">Pet Clinic</option>
+                        <option value="Veterinary Hospital">Veterinary Hospital</option>
+                        <option value="Animal Hospital">Animal Hospital</option>
+                        <option value="Mobile Vet Service">Mobile Vet Service</option>
+                        <option value="Emergency Vet Clinic">Emergency Vet Clinic</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="businessAddress">Business Address</label>
+                    <textarea id="businessAddress" placeholder="123 Main St, City, State, ZIP"></textarea>
+                </div>
+            </div>
+
+            <!-- Step 2: Contact Information -->
+            <div class="form-section" data-section="2">
+                <h2>Contact Information</h2>
+                <div class="form-group">
+                    <label for="contactEmail">Primary Email <span class="required">*</span></label>
+                    <input type="email" id="contactEmail" required>
+                    <small>Used for automated notifications and client communications</small>
+                </div>
+                <div class="form-group">
+                    <label for="phoneNumber">Phone Number <span class="required">*</span></label>
+                    <input type="tel" id="phoneNumber" required>
+                </div>
+                <div class="form-group">
+                    <label for="emergencyPhone">Emergency Phone (Optional)</label>
+                    <input type="tel" id="emergencyPhone">
+                    <small>For after-hours emergency contact</small>
+                </div>
+                <div class="form-group">
+                    <label for="websiteUrl">Website URL (Optional)</label>
+                    <input type="url" id="websiteUrl" placeholder="https://your-clinic.com">
+                </div>
+            </div>
+
+            <!-- Step 3: Automation Settings -->
+            <div class="form-section" data-section="3">
+                <h2>Automation Settings</h2>
+                <div class="form-group">
+                    <label for="businessHours">Business Hours</label>
+                    <input type="text" id="businessHours" value="Mon-Fri 9AM-5PM">
+                    <small>When your automated responses should mention you're available</small>
+                </div>
+                <div class="form-group">
+                    <label for="appointmentUrl">Online Booking URL (Optional)</label>
+                    <input type="url" id="appointmentUrl" placeholder="https://book.your-clinic.com">
+                    <small>Link for automated appointment booking messages</small>
+                </div>
+                <div class="form-group">
+                    <label for="telegramBotToken">Telegram Bot Token (Optional)</label>
+                    <input type="text" id="telegramBotToken" placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz">
+                    <small>For Telegram automation (contact @BotFather to create)</small>
+                </div>
+                <div class="form-group">
+                    <label for="telegramChatId">Telegram Chat/Channel ID (Optional)</label>
+                    <input type="text" id="telegramChatId" placeholder="@your_clinic_channel">
+                    <small>Where automated Telegram messages will be sent</small>
+                </div>
+            </div>
+
+            <!-- Step 4: Review -->
+            <div class="form-section" data-section="4">
+                <h2>Review Your Information</h2>
+                <div id="reviewContent"></div>
+            </div>
+
+            <!-- Loading -->
+            <div class="loading">
+                <div class="spinner"></div>
+                <h3>Creating Your Personalized Workflow...</h3>
+                <p>This may take a few moments while we set up your automation.</p>
+            </div>
+
+            <!-- Success -->
+            <div class="success-message">
+                <h2>🎉 Success!</h2>
+                <p>Your personalized workflow has been created and activated!</p>
+                <div class="success-details">
+                    <p><strong>Workflow Name:</strong> <span id="workflowName"></span></p>
+                    <p><strong>N8N URL:</strong> <a href="#" id="n8nUrl" target="_blank">View in N8N Dashboard</a></p>
+                    <p><strong>Created:</strong> <span id="createdTime"></span></p>
+                </div>
+                <p>Your automated workflow is now running and ready to handle customer interactions!</p>
+                <a href="/admin" class="admin-link">View Admin Dashboard</a>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="button-group">
+                <button type="button" class="btn btn-secondary" id="prevBtn" onclick="changeStep(-1)" style="display: none;">Previous</button>
+                <button type="button" class="btn btn-primary" id="nextBtn" onclick="changeStep(1)">Next</button>
+                <button type="button" class="btn btn-success" id="submitBtn" onclick="submitForm()" style="display: none;">Create My Workflow</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -20,6 +20,10 @@ args = "test-deployment-script"
 task = "workflow.run"
 args = "etf-dashboard"
 
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "client-onboarding"
+
 [[workflows.workflow]]
 name = "test-deployment-script"
 author = "agent"
@@ -35,6 +39,15 @@ author = "agent"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "cd etf-dashboard && PORT=5000 npm start"
+waitForPort = 5000
+
+[[workflows.workflow]]
+name = "client-onboarding"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd client-onboarding && N8N_BASE_URL=https://n8n-app-gvq5.onrender.com N8N_API_KEY=${N8N_API_KEY} PORT=5000 npm start"
 waitForPort = 5000
 
 [[ports]]
