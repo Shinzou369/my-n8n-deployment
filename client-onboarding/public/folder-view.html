@@ -6,56 +6,187 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>N8N Folder Manager</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
-        .container { max-width: 1200px; margin: 0 auto; }
-        .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .folder-tree { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .folder { 
-            margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; 
-            background: #f9f9f9; min-height: 60px; transition: all 0.2s ease;
-        }
-        .folder-name { font-weight: bold; color: #333; margin-bottom: 10px; }
-        .workflow-item { 
-            margin: 5px 0; padding: 8px; background: white; border-radius: 3px; border-left: 3px solid #007cba;
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background: #f8f9fa; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, #007cba, #0056b3); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+        .header h1 { margin: 0 0 10px 0; font-size: 2.2rem; }
+        .header p { margin: 0; opacity: 0.9; font-size: 1.1rem; }
+        
+        .main-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        
+        .section { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; }
+        .section-header { 
+            background: linear-gradient(135deg, #28a745, #20c997); 
+            color: white; padding: 20px; cursor: pointer; user-select: none;
             display: flex; justify-content: space-between; align-items: center;
-            cursor: grab; transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
-        .workflow-item:hover { transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
-        .workflow-item.dragging { opacity: 0.5; cursor: grabbing; }
-        .folder.drag-over { background: #e3f2fd; border: 2px dashed #007cba; }
+        .section-header:hover { background: linear-gradient(135deg, #20c997, #28a745); }
+        .section-header.client-section { background: linear-gradient(135deg, #6f42c1, #007bff); }
+        .section-header.client-section:hover { background: linear-gradient(135deg, #007bff, #6f42c1); }
+        .section-title { font-size: 1.4rem; font-weight: 600; margin: 0; }
+        .section-count { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 0.9rem; }
+        .collapse-icon { font-size: 1.2rem; transition: transform 0.3s ease; }
+        .collapsed .collapse-icon { transform: rotate(-90deg); }
+        
+        .section-content { padding: 20px; max-height: 600px; overflow-y: auto; transition: all 0.3s ease; }
+        .collapsed .section-content { display: none; }
+        
+        .folder { 
+            margin: 15px 0; padding: 15px; border: 2px solid #e9ecef; border-radius: 8px; 
+            background: #f8f9fa; min-height: 70px; transition: all 0.3s ease;
+            position: relative;
+        }
+        .folder:hover { border-color: #007cba; box-shadow: 0 2px 8px rgba(0,123,186,0.1); }
+        .folder.drag-over { 
+            background: linear-gradient(135deg, #e3f2fd, #f0f8ff); 
+            border: 2px dashed #007cba; 
+            transform: scale(1.02);
+        }
+        
+        .folder-name { 
+            font-weight: 600; color: #495057; margin-bottom: 12px; font-size: 1.1rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .folder-badge { 
+            background: #007cba; color: white; padding: 2px 8px; 
+            border-radius: 12px; font-size: 0.8rem; font-weight: normal;
+        }
+        
+        .workflow-item { 
+            margin: 8px 0; padding: 12px; background: white; border-radius: 6px; 
+            border-left: 4px solid #007cba; display: flex; justify-content: space-between; 
+            align-items: center; cursor: grab; transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .workflow-item:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left-width: 6px;
+        }
+        .workflow-item.dragging { 
+            opacity: 0.6; cursor: grabbing; transform: rotate(5deg) scale(1.05);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+        }
         .workflow-active { border-left-color: #28a745; }
         .workflow-inactive { border-left-color: #dc3545; }
-        .controls { margin: 20px 0; }
-        .btn { 
-            background: #007cba; color: white; border: none; padding: 10px 20px; 
-            border-radius: 5px; cursor: pointer; margin-right: 10px;
+        .workflow-template { border-left-color: #ffc107; }
+        
+        .workflow-info { flex: 1; }
+        .workflow-name { font-weight: 600; color: #495057; margin-bottom: 4px; }
+        .workflow-meta { font-size: 0.85rem; color: #6c757d; }
+        .workflow-status { 
+            display: inline-block; width: 8px; height: 8px; border-radius: 50%; 
+            margin-right: 6px; background: #dc3545;
         }
-        .btn:hover { background: #005a8b; }
+        .workflow-status.active { background: #28a745; }
+        
+        .workflow-actions { display: flex; gap: 8px; }
+        .btn-small { 
+            background: #6c757d; color: white; border: none; padding: 6px 12px; 
+            border-radius: 4px; cursor: pointer; font-size: 0.8rem;
+            transition: all 0.2s ease;
+        }
+        .btn-small:hover { background: #5a6268; transform: translateY(-1px); }
+        
+        .controls { 
+            background: white; padding: 20px; border-radius: 12px; 
+            margin-bottom: 30px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+        }
+        .btn { 
+            background: #007cba; color: white; border: none; padding: 12px 20px; 
+            border-radius: 6px; cursor: pointer; font-weight: 500; font-size: 0.9rem;
+            transition: all 0.2s ease; display: flex; align-items: center; gap: 8px;
+        }
+        .btn:hover { background: #005a8b; transform: translateY(-1px); }
         .btn-success { background: #28a745; }
         .btn-success:hover { background: #1e7e34; }
-        .status { padding: 10px; border-radius: 5px; margin: 10px 0; }
-        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #5a6268; }
+        
+        .status { padding: 15px; border-radius: 8px; margin: 15px 0; font-weight: 500; }
+        .success { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
         .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        
+        .empty-state { 
+            text-align: center; padding: 40px 20px; color: #6c757d; 
+            background: #f8f9fa; border-radius: 8px; margin: 20px 0;
+        }
+        .empty-state-icon { font-size: 3rem; margin-bottom: 15px; opacity: 0.5; }
+        
+        @media (max-width: 768px) {
+            .main-sections { grid-template-columns: 1fr; }
+            .controls { justify-content: center; }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🗂️ N8N Folder Manager</h1>
-            <p>Organize your workflows with custom folders</p>
+            <h1>🗂️ N8N Workflow Manager</h1>
+            <p>Organize your templates and client workflows with drag-and-drop functionality</p>
         </div>
 
         <div class="controls">
-            <button class="btn" onclick="loadFolders()">🔄 Refresh Folders</button>
-            <button class="btn btn-success" onclick="autoOrganize()">🤖 Auto-Organize</button>
-            <button class="btn" onclick="createFolder()">📁 New Folder</button>
+            <button class="btn" onclick="loadFolders()">
+                <span>🔄</span> Refresh
+            </button>
+            <button class="btn btn-success" onclick="autoOrganize()">
+                <span>🤖</span> Auto-Organize
+            </button>
+            <button class="btn btn-secondary" onclick="createTemplateFolder()">
+                <span>📁</span> New Template Folder
+            </button>
+            <button class="btn btn-secondary" onclick="createClientFolder()">
+                <span>👥</span> New Client Folder
+            </button>
         </div>
 
         <div id="status"></div>
 
-        <div class="folder-tree">
-            <div id="folder-structure">
-                <p>Loading folder structure...</p>
+        <div class="main-sections">
+            <div class="section">
+                <div class="section-header" onclick="toggleSection('templates')">
+                    <div>
+                        <div class="section-title">📋 Template Workflows</div>
+                        <small>Master templates and ETF niche workflows</small>
+                    </div>
+                    <div>
+                        <span class="section-count" id="template-count">0</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                </div>
+                <div class="section-content" id="templates-content">
+                    <div id="templates-structure">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📋</div>
+                            <p>Loading template workflows...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <div class="section-header client-section" onclick="toggleSection('clients')">
+                    <div>
+                        <div class="section-title">👥 Client Workflows</div>
+                        <small>Personalized client workflow instances</small>
+                    </div>
+                    <div>
+                        <span class="section-count" id="client-count">0</span>
+                        <span class="collapse-icon">▼</span>
+                    </div>
+                </div>
+                <div class="section-content" id="clients-content">
+                    <div id="clients-structure">
+                        <div class="empty-state">
+                            <div class="empty-state-icon">👥</div>
+                            <p>Loading client workflows...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -72,39 +203,108 @@
         }
 
         function displayFolders(folders) {
-            const container = document.getElementById('folder-structure');
-            container.innerHTML = '';
+            const templatesContainer = document.getElementById('templates-structure');
+            const clientsContainer = document.getElementById('clients-structure');
+            
+            templatesContainer.innerHTML = '';
+            clientsContainer.innerHTML = '';
+            
+            let templateCount = 0;
+            let clientCount = 0;
+
+            // Separate templates and client workflows
+            const templateFolders = {};
+            const clientFolders = {};
 
             for (const [path, folder] of Object.entries(folders)) {
-                const folderDiv = document.createElement('div');
-                folderDiv.className = 'folder';
+                const isClientFolder = folder.workflows.some(w => w.name.includes(' - ')) || 
+                                     path.toLowerCase().includes('client');
                 
-                folderDiv.innerHTML = `
-                    <div class="folder-name">📁 ${folder.name} (${folder.workflows.length} workflows)</div>
-                    ${folder.workflows.map(workflow => `
-                        <div class="workflow-item ${workflow.active ? 'workflow-active' : 'workflow-inactive'}" 
+                if (isClientFolder) {
+                    clientFolders[path] = folder;
+                    clientCount += folder.workflows.length;
+                } else {
+                    templateFolders[path] = folder;
+                    templateCount += folder.workflows.length;
+                }
+            }
+
+            // Display template folders
+            if (Object.keys(templateFolders).length === 0) {
+                templatesContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <p>No template workflows found</p>
+                        <button class="btn btn-secondary" onclick="createTemplateFolder()">Create Template Folder</button>
+                    </div>
+                `;
+            } else {
+                for (const [path, folder] of Object.entries(templateFolders)) {
+                    templatesContainer.appendChild(createFolderElement(path, folder, 'template'));
+                }
+            }
+
+            // Display client folders
+            if (Object.keys(clientFolders).length === 0) {
+                clientsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">👥</div>
+                        <p>No client workflows found</p>
+                        <small>Client workflows will appear here after onboarding</small>
+                    </div>
+                `;
+            } else {
+                for (const [path, folder] of Object.entries(clientFolders)) {
+                    clientsContainer.appendChild(createFolderElement(path, folder, 'client'));
+                }
+            }
+
+            // Update counts
+            document.getElementById('template-count').textContent = templateCount;
+            document.getElementById('client-count').textContent = clientCount;
+        }
+
+        function createFolderElement(path, folder, type) {
+            const folderDiv = document.createElement('div');
+            folderDiv.className = 'folder';
+            folderDiv.setAttribute('data-folder-path', path);
+            folderDiv.setAttribute('data-folder-type', type);
+            
+            folderDiv.innerHTML = `
+                <div class="folder-name">
+                    <span>📁 ${folder.name}</span>
+                    <span class="folder-badge">${folder.workflows.length}</span>
+                </div>
+                ${folder.workflows.length === 0 ? 
+                    '<div class="empty-state"><small>No workflows in this folder</small></div>' :
+                    folder.workflows.map(workflow => `
+                        <div class="workflow-item ${workflow.active ? 'workflow-active' : 'workflow-inactive'} ${type === 'template' ? 'workflow-template' : ''}" 
                              draggable="true" 
                              data-workflow-id="${workflow.id}" 
-                             data-workflow-name="${workflow.name}">
-                            <span>
-                                ${workflow.active ? '🟢' : '🔴'} ${workflow.name} 
-                                <small>(${workflow.nodes} nodes)</small>
-                            </span>
-                            <button class="btn" onclick="moveWorkflow('${workflow.id}', '${workflow.name}')">
-                                📤 Move
-                            </button>
+                             data-workflow-name="${workflow.name}"
+                             data-workflow-type="${type}">
+                            <div class="workflow-info">
+                                <div class="workflow-name">
+                                    <span class="workflow-status ${workflow.active ? 'active' : ''}"></span>
+                                    ${workflow.name}
+                                </div>
+                                <div class="workflow-meta">${workflow.nodes} nodes • ${workflow.active ? 'Active' : 'Inactive'}</div>
+                            </div>
+                            <div class="workflow-actions">
+                                <button class="btn-small" onclick="viewWorkflow('${workflow.id}')">👁️ View</button>
+                                <button class="btn-small" onclick="moveWorkflow('${workflow.id}', '${workflow.name}')">📤 Move</button>
+                            </div>
                         </div>
-                    `).join('')}
-                `;
-                
-                // Make folder a drop zone
-                folderDiv.setAttribute('data-folder-path', path);
-                folderDiv.addEventListener('dragover', handleDragOver);
-                folderDiv.addEventListener('drop', handleDrop);
-                folderDiv.addEventListener('dragleave', handleDragLeave);
-                
-                container.appendChild(folderDiv);
-            }
+                    `).join('')
+                }
+            `;
+            
+            // Make folder a drop zone
+            folderDiv.addEventListener('dragover', handleDragOver);
+            folderDiv.addEventListener('drop', handleDrop);
+            folderDiv.addEventListener('dragleave', handleDragLeave);
+            
+            return folderDiv;
         }
 
         async function autoOrganize() {
@@ -125,22 +325,44 @@
             }
         }
 
-        function createFolder() {
-            const folderPath = prompt('Enter folder path (e.g., "Business/Pet Clinics"):');
+        function toggleSection(sectionId) {
+            const section = document.querySelector(`#${sectionId}-content`).parentElement;
+            section.classList.toggle('collapsed');
+        }
+
+        function createTemplateFolder() {
+            const folderPath = prompt('Enter template folder path (e.g., "Pet Clinic Templates", "Real Estate Templates"):');
             if (folderPath) {
-                fetch('/api/folders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ folderPath })
-                }).then(() => {
-                    showStatus(`✅ Folder "${folderPath}" created!`, 'success');
-                    loadFolders().then(() => {
-                        setTimeout(addDragListeners, 100);
-                    });
-                }).catch(() => {
-                    showStatus('❌ Failed to create folder', 'error');
-                });
+                createFolder(`Templates/${folderPath}`);
             }
+        }
+
+        function createClientFolder() {
+            const folderPath = prompt('Enter client folder path (e.g., "Pet Clinic Clients", "Real Estate Clients"):');
+            if (folderPath) {
+                createFolder(`Clients/${folderPath}`);
+            }
+        }
+
+        function createFolder(folderPath) {
+            fetch('/api/folders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ folderPath })
+            }).then(() => {
+                showStatus(`✅ Folder "${folderPath}" created!`, 'success');
+                loadFolders().then(() => {
+                    setTimeout(addDragListeners, 100);
+                });
+            }).catch(() => {
+                showStatus('❌ Failed to create folder', 'error');
+            });
+        }
+
+        function viewWorkflow(workflowId) {
+            const baseUrl = window.location.protocol + '//' + window.location.host;
+            const n8nUrl = baseUrl.replace(':5000', '') + '/workflow/' + workflowId;
+            window.open(`https://n8n-app-gvq5.onrender.com/workflow/${workflowId}`, '_blank');
         }
 
         function moveWorkflow(workflowId, workflowName) {
@@ -226,6 +448,11 @@
         // Add event listeners after folders are loaded
         function addDragListeners() {
             document.querySelectorAll('.workflow-item[draggable="true"]').forEach(item => {
+                // Remove existing listeners to prevent duplicates
+                item.removeEventListener('dragstart', handleDragStart);
+                item.removeEventListener('dragend', handleDragEnd);
+                
+                // Add fresh listeners
                 item.addEventListener('dragstart', handleDragStart);
                 item.addEventListener('dragend', handleDragEnd);
             });

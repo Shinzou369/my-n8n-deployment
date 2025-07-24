@@ -124,17 +124,33 @@ class N8NFolderManager {
           const name = workflow.name;
           let folderPath = 'Uncategorized';
           
-          // Auto-organize based on naming patterns
-          if (name.includes('PET CLINIC')) {
-            folderPath = 'Business/Pet Clinics';
-          } else if (name.includes('REAL ESTATE')) {
-            folderPath = 'Business/Real Estate';
-          } else if (name.includes('RESTAURANT')) {
-            folderPath = 'Business/Restaurants';
-          } else if (name.includes('TEMPLATE') || name === name.toUpperCase()) {
-            folderPath = 'Templates';
-          } else if (name.includes('TEST') || name.includes('test')) {
-            folderPath = 'Development/Testing';
+          // Check if it's a client workflow (contains " - " in name)
+          if (name.includes(' - ')) {
+            // Client workflow
+            if (name.includes('PET CLINIC')) {
+              folderPath = 'Clients/Pet Clinic Clients';
+            } else if (name.includes('REAL ESTATE')) {
+              folderPath = 'Clients/Real Estate Clients';
+            } else if (name.includes('RESTAURANT')) {
+              folderPath = 'Clients/Restaurant Clients';
+            } else {
+              folderPath = 'Clients/General Clients';
+            }
+          } else {
+            // Template workflow
+            if (name.includes('PET CLINIC')) {
+              folderPath = 'Templates/Pet Clinic Templates';
+            } else if (name.includes('REAL ESTATE')) {
+              folderPath = 'Templates/Real Estate Templates';
+            } else if (name.includes('RESTAURANT')) {
+              folderPath = 'Templates/Restaurant Templates';
+            } else if (name.includes('TEMPLATE') || name === name.toUpperCase()) {
+              folderPath = 'Templates/General Templates';
+            } else if (name.includes('TEST') || name.includes('test')) {
+              folderPath = 'Templates/Development/Testing';
+            } else {
+              folderPath = 'Templates/Uncategorized';
+            }
           }
           
           this.assignWorkflowToFolder(workflow.id, folderPath);

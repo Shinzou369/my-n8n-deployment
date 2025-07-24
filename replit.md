@@ -6,7 +6,7 @@ This repository provides a comprehensive toolkit for deploying and managing n8n 
 
 **Latest Update (July 2025)**: 
 - ✅ **PROJECT REFOCUS**: Shifted from ETF Management Dashboard to pure N8N self-hosting platform
-- ✅ **WORKFLOW ANALYSIS**: Current N8N instance has 3 workflows (1 active PET CLINIC with 28 nodes)
+- ✅ **WORKFLOW ANALYSIS**: Current N8N instance has 6 workflows (3 templates, 3 client instances)
 - ✅ **CAPACITY ASSESSMENT**: Current Render setup supports 3-5 medium-complexity workflows simultaneously
 - ✅ **AUTOMATED DUPLICATOR**: Built comprehensive workflow duplication system with client personalization
 - ✅ **CLIENT ONBOARDING WEBSITE**: Live 4-step wizard for clients to personalize their workflows
@@ -14,7 +14,10 @@ This repository provides a comprehensive toolkit for deploying and managing n8n 
 - ✅ **PLACEHOLDER SYSTEM**: Smart text replacement for client-specific data injection
 - ✅ **PROJECT CLEANUP**: Archived ETF-related files, organized pure N8N self-hosting structure
 - ✅ **LIVE DEMO**: Client onboarding system running on port 5000 with N8N API integration
-- 🎯 **BUSINESS MODEL**: One template workflow becomes unlimited personalized client deployments
+- ✅ **DRAG-DROP FOLDERS**: Advanced folder management with Templates/Client separation and drag-drop
+- ✅ **ETF MULTI-WORKFLOW**: Complete workflow suite duplication for comprehensive client setups
+- ✅ **COLLAPSIBLE UI**: Professional folder interface with collapsible sections and visual feedback
+- 🎯 **BUSINESS MODEL**: Templates become unlimited personalized client deployments (single or multi-workflow)
 
 ## User Preferences
 
