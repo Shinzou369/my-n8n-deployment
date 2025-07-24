@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Workflow Manager</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #f5f6fa; padding: 20px; 
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .header { 
+            background: white; padding: 20px; border-radius: 8px; 
+            margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .title { 
+            color: #2c3e50; font-size: 1.8rem; font-weight: 600; 
+            margin-bottom: 8px; 
+        }
+        
+        .subtitle { color: #7f8c8d; }
+        
+        .actions { 
+            display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; 
+        }
+        
+        .btn { 
+            background: #3498db; color: white; border: none; padding: 10px 16px; 
+            border-radius: 6px; cursor: pointer; font-size: 0.9rem; font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .btn:hover { background: #2980b9; transform: translateY(-1px); }
+        .btn-secondary { background: #95a5a6; }
+        .btn-secondary:hover { background: #7f8c8d; }
+        .btn-danger { background: #e74c3c; }
+        .btn-danger:hover { background: #c0392b; }
+        
+        .workflow-grid { 
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+            gap: 20px; 
+        }
+        
+        .workflow-card { 
+            background: white; border-radius: 8px; padding: 20px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+        
+        .workflow-card:hover { 
+            transform: translateY(-2px); 
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15); 
+        }
+        
+        .workflow-card.client { border-left-color: #e67e22; }
+        .workflow-card.template { border-left-color: #27ae60; }
+        
+        .workflow-name { 
+            font-size: 1.1rem; font-weight: 600; color: #2c3e50; 
+            margin-bottom: 8px; 
+        }
+        
+        .workflow-meta { 
+            color: #7f8c8d; font-size: 0.85rem; margin-bottom: 16px; 
+        }
+        
+        .workflow-status { 
+            display: inline-block; padding: 4px 8px; border-radius: 12px; 
+            font-size: 0.75rem; font-weight: 600; text-transform: uppercase; 
+        }
+        
+        .workflow-status.active { background: #d5f4e6; color: #27ae60; }
+        .workflow-status.inactive { background: #fadbd8; color: #e74c3c; }
+        
+        .workflow-actions { 
+            display: flex; gap: 8px; align-items: center; margin-top: 16px; 
+        }
+        
+        .folder-select { 
+            flex: 1; padding: 6px 10px; border: 1px solid #ddd; 
+            border-radius: 4px; font-size: 0.85rem; background: white;
+        }
+        
+        .btn-small { 
+            padding: 6px 12px; font-size: 0.8rem; 
+        }
+        
+        .section-title { 
+            color: #2c3e50; font-size: 1.3rem; font-weight: 600; 
+            margin: 30px 0 15px 0; padding-bottom: 8px; 
+            border-bottom: 2px solid #ecf0f1; 
+        }
+        
+        .section-title.templates { color: #27ae60; border-bottom-color: #27ae60; }
+        .section-title.clients { color: #e67e22; border-bottom-color: #e67e22; }
+        
+        .status-message { 
+            position: fixed; top: 20px; right: 20px; padding: 12px 16px; 
+            border-radius: 6px; font-weight: 500; z-index: 1000; 
+            transform: translateX(400px); transition: transform 0.3s ease; 
+        }
+        
+        .status-message.show { transform: translateX(0); }
+        .status-message.success { background: #d5f4e6; color: #27ae60; }
+        .status-message.error { background: #fadbd8; color: #e74c3c; }
+        .status-message.info { background: #d6eaf8; color: #3498db; }
+        
+        .empty-state { 
+            text-align: center; padding: 40px 20px; color: #7f8c8d; 
+        }
+        
+        .loading { 
+            text-align: center; padding: 40px; color: #7f8c8d; 
+        }
+        
+        @media (max-width: 768px) {
+            .workflow-grid { grid-template-columns: 1fr; }
+            .actions { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Simple Workflow Manager</h1>
+            <p class="subtitle">Organize your N8N workflows easily</p>
+        </div>
+        
+        <div class="actions">
+            <button class="btn" onclick="loadWorkflows()">🔄 Refresh</button>
+            <button class="btn btn-secondary" onclick="autoOrganize()">📁 Auto-Organize</button>
+            <button class="btn btn-secondary" onclick="resetOrganization()">🔄 Reset All Folders</button>
+        </div>
+        
+        <div id="content">
+            <div class="loading">Loading workflows...</div>
+        </div>
+    </div>
+    
+    <div id="status" class="status-message"></div>
+    
+    <script>
+        let allWorkflows = [];
+        let allFolders = {};
+        
+        async function loadWorkflows() {
+            try {
+                showStatus('Loading workflows...', 'info');
+                
+                const response = await fetch('/api/folders');
+                const folders = await response.json();
+                
+                allFolders = folders;
+                displayWorkflows(folders);
+                showStatus('Workflows loaded successfully', 'success');
+                
+            } catch (error) {
+                console.error('Error loading workflows:', error);
+                showStatus('Failed to load workflows', 'error');
+            }
+        }
+        
+        function displayWorkflows(folders) {
+            const content = document.getElementById('content');
+            
+            // Separate templates and clients
+            const templates = [];
+            const clients = [];
+            
+            for (const [path, folder] of Object.entries(folders)) {
+                for (const workflow of folder.workflows) {
+                    workflow.folderPath = path;
+                    
+                    if (workflow.name.includes(' - ')) {
+                        clients.push(workflow);
+                    } else {
+                        templates.push(workflow);
+                    }
+                }
+            }
+            
+            content.innerHTML = `
+                <div class="section-title templates">📋 Templates (${templates.length})</div>
+                <div class="workflow-grid">
+                    ${templates.length === 0 ? 
+                        '<div class="empty-state">No template workflows found</div>' :
+                        templates.map(w => createWorkflowCard(w, 'template')).join('')
+                    }
+                </div>
+                
+                <div class="section-title clients">👥 Client Workflows (${clients.length})</div>
+                <div class="workflow-grid">
+                    ${clients.length === 0 ? 
+                        '<div class="empty-state">No client workflows found</div>' :
+                        clients.map(w => createWorkflowCard(w, 'client')).join('')
+                    }
+                </div>
+            `;
+        }
+        
+        function createWorkflowCard(workflow, type) {
+            const folderOptions = Object.keys(allFolders)
+                .filter(path => path !== workflow.folderPath)
+                .map(path => `<option value="${path}">${path}</option>`)
+                .join('');
+                
+            return `
+                <div class="workflow-card ${type}">
+                    <div class="workflow-name">${workflow.name}</div>
+                    <div class="workflow-meta">
+                        ${workflow.nodes} nodes • 
+                        <span class="workflow-status ${workflow.active ? 'active' : 'inactive'}">
+                            ${workflow.active ? 'Active' : 'Inactive'}
+                        </span>
+                    </div>
+                    <div class="workflow-meta">Current folder: ${workflow.folderPath}</div>
+                    
+                    <div class="workflow-actions">
+                        <select class="folder-select" onchange="moveWorkflow('${workflow.id}', '${workflow.name}', this.value)">
+                            <option value="">Move to folder...</option>
+                            ${folderOptions}
+                        </select>
+                        <button class="btn btn-small" onclick="viewWorkflow('${workflow.id}')">👁️ View</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function moveWorkflow(workflowId, workflowName, targetFolder) {
+            if (!targetFolder) return;
+            
+            try {
+                showStatus(`Moving "${workflowName}" to "${targetFolder}"...`, 'info');
+                
+                const response = await fetch(`/api/workflows/${workflowId}/move`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ folderPath: targetFolder })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus(`✅ Moved "${workflowName}" to "${targetFolder}"`, 'success');
+                    loadWorkflows(); // Reload to show updated organization
+                } else {
+                    showStatus('❌ Failed to move workflow', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error moving workflow:', error);
+                showStatus('❌ Failed to move workflow', 'error');
+            }
+        }
+        
+        async function autoOrganize() {
+            try {
+                showStatus('Auto-organizing workflows...', 'info');
+                
+                const response = await fetch('/api/auto-organize', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('✅ Workflows auto-organized successfully!', 'success');
+                    loadWorkflows();
+                } else {
+                    showStatus('❌ Auto-organize failed', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error auto-organizing:', error);
+                showStatus('❌ Auto-organize failed', 'error');
+            }
+        }
+        
+        async function resetOrganization() {
+            if (!confirm('This will reset all folder assignments. Are you sure?')) {
+                return;
+            }
+            
+            try {
+                showStatus('Resetting folder organization...', 'info');
+                
+                const response = await fetch('/api/reset-folders', { method: 'POST' });
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('✅ Folder organization reset successfully!', 'success');
+                    loadWorkflows();
+                } else {
+                    showStatus('❌ Reset failed', 'error');
+                }
+                
+            } catch (error) {
+                console.error('Error resetting:', error);
+                showStatus('❌ Reset failed', 'error');
+            }
+        }
+        
+        function viewWorkflow(workflowId) {
+            window.open(`https://n8n-app-gvq5.onrender.com/workflow/${workflowId}`, '_blank');
+        }
+        
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status-message ${type} show`;
+            
+            setTimeout(() => {
+                status.classList.remove('show');
+            }, 4000);
+        }
+        
+        // Load workflows on page load
+        loadWorkflows();
+    </script>
+</body>
+</html>

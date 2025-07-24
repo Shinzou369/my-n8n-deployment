@@ -49,6 +49,13 @@ class N8NFolderManager {
     }
     
     this.workflowFolders.set(workflowId, folderPath);
+    console.log(`📁 Assigned workflow ${workflowId} to folder: ${folderPath}`);
+  }
+
+  // Move workflow to a different folder (for UI operations)
+  moveWorkflowToFolder(workflowId, targetFolderPath) {
+    console.log(`🔄 Moving workflow ${workflowId} to ${targetFolderPath}`);
+    this.assignWorkflowToFolder(workflowId, targetFolderPath);
   }
 
   // Get folder structure with workflows
@@ -60,16 +67,34 @@ class N8NFolderManager {
       });
       
       const workflows = response.data.data;
+      console.log(`📋 Retrieved ${workflows.length} workflows from N8N`);
       
-      // Filter out archived workflows
-      const activeWorkflows = workflows.filter(workflow => !workflow.archived);
+      // Filter out archived workflows properly
+      const activeWorkflows = workflows.filter(workflow => {
+        const isArchived = workflow.archived === true || workflow.archived === 'true';
+        if (isArchived) {
+          console.log(`🗃️ Excluding archived workflow: ${workflow.name}`);
+        }
+        return !isArchived;
+      });
       
-      // Auto-organize all workflows first to ensure proper folder placement
-      await this.autoOrganizeAllWorkflows(activeWorkflows);
+      console.log(`✅ Working with ${activeWorkflows.length} non-archived workflows`);
       
+      // Build structure from organized workflows
       const structure = {};
+      
+      // Create default folders if they don't exist
+      this.ensureDefaultFolders();
+      
+      // Only auto-organize workflows that aren't already assigned
+      for (const workflow of activeWorkflows) {
+        if (!this.workflowFolders.has(workflow.id)) {
+          const folderPath = this.determineWorkflowFolder(workflow.name);
+          this.assignWorkflowToFolder(workflow.id, folderPath);
+        }
+      }
 
-      // Organize workflows by folder
+      // Build final structure
       for (const [folderPath, folderData] of this.folders) {
         const workflowDetails = [];
         
@@ -81,7 +106,7 @@ class N8NFolderManager {
               name: workflow.name,
               active: workflow.active,
               nodes: workflow.nodes?.length || 0,
-              archived: workflow.archived || false
+              archived: false // These are all non-archived
             });
           }
         }
@@ -92,25 +117,26 @@ class N8NFolderManager {
         };
       }
 
-      // Add any remaining unorganized workflows (excluding archived)
-      const organizedIds = new Set(this.workflowFolders.keys());
-      const unorganized = activeWorkflows.filter(w => !organizedIds.has(w.id));
-      
-      if (unorganized.length > 0) {
-        // Try to organize these as well
-        for (const workflow of unorganized) {
-          const folderPath = this.determineWorkflowFolder(workflow.name);
-          this.assignWorkflowToFolder(workflow.id, folderPath);
-        }
-        
-        // Rebuild structure with newly organized workflows
-        return this.getFolderStructure();
-      }
-
       return structure;
     } catch (error) {
       console.error('Error getting folder structure:', error);
       throw error;
+    }
+  }
+
+  // Ensure default folders exist
+  ensureDefaultFolders() {
+    const defaultFolders = [
+      'Templates/Pet Clinic Templates',
+      'Templates/Uncategorized',
+      'Clients/Pet Clinic Clients',
+      'Clients/General Clients'
+    ];
+    
+    for (const folderPath of defaultFolders) {
+      if (!this.folders.has(folderPath)) {
+        this.createFolder(folderPath);
+      }
     }
   }
 
@@ -158,6 +184,7 @@ class N8NFolderManager {
         workflows = response.data.data.filter(w => !w.archived); // Exclude archived
       }
       
+      // Reset all assignments first for fresh auto-organization
       for (const workflow of workflows) {
         if (!workflow.archived) { // Double-check archived status
           const folderPath = this.determineWorkflowFolder(workflow.name);
@@ -170,6 +197,15 @@ class N8NFolderManager {
       console.error('Auto-organize failed:', error);
       return false;
     }
+  }
+
+  // Reset all folder assignments
+  resetFolderAssignments() {
+    this.workflowFolders.clear();
+    for (const folder of this.folders.values()) {
+      folder.workflows = [];
+    }
+    console.log('🔄 All folder assignments reset');
   }
 
   // Delete empty folder

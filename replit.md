@@ -14,11 +14,12 @@ This repository provides a comprehensive toolkit for deploying and managing n8n 
 - ✅ **PLACEHOLDER SYSTEM**: Smart text replacement for client-specific data injection
 - ✅ **PROJECT CLEANUP**: Archived ETF-related files, organized pure N8N self-hosting structure
 - ✅ **LIVE DEMO**: Client onboarding system running on port 5000 with N8N API integration
-- ✅ **DROPDOWN FOLDERS**: Replaced drag-drop with dropdown selectors for intuitive workflow organization
+- ✅ **SIMPLE WORKFLOW MANAGER**: Clean card-based interface with persistent folder assignments
+- ✅ **DROPDOWN ORGANIZATION**: Dropdown selectors for moving workflows between folders
+- ✅ **PERSISTENT MOVES**: Manual workflow moves now stick and don't get overridden
 - ✅ **ETF MULTI-WORKFLOW**: Complete workflow suite duplication for comprehensive client setups
-- ✅ **COLLAPSIBLE UI**: Professional folder interface with collapsible sections and visual feedback
-- ✅ **FOLDER DELETION**: Ability to delete empty folders to maintain clean organization
-- ✅ **ARCHIVED FILTERING**: Archived workflows excluded from folder organization lists
+- ✅ **CLEAN UI**: Separate template and client sections with visual status indicators
+- ✅ **ARCHIVED FILTERING**: Archived workflows completely excluded from organization
 - 🎯 **BUSINESS MODEL**: Templates become unlimited personalized client deployments (single or multi-workflow)
 
 ## User Preferences

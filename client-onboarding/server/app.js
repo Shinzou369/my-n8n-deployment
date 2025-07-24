@@ -307,8 +307,8 @@ app.post('/api/workflows/:workflowId/move', async (req, res) => {
         const { workflowId } = req.params;
         const { folderPath } = req.body;
         
-        folderManager.assignWorkflowToFolder(workflowId, folderPath);
-        res.json({ success: true, message: 'Workflow moved successfully' });
+        folderManager.moveWorkflowToFolder(workflowId, folderPath);
+        res.json({ success: true, message: `Workflow moved to ${folderPath}` });
     } catch (error) {
         console.error('Error moving workflow:', error);
         res.status(500).json({ success: false, error: 'Failed to move workflow' });
@@ -348,6 +348,23 @@ app.delete('/api/folders/:folderPath', async (req, res) => {
         res.status(400).json({ 
             success: false, 
             error: error.message 
+        });
+    }
+});
+
+// Reset folder organization
+app.post('/api/reset-folders', async (req, res) => {
+    try {
+        folderManager.resetFolderAssignments();
+        res.json({ 
+            success: true, 
+            message: 'Folder organization reset successfully' 
+        });
+    } catch (error) {
+        console.error('Reset folders error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Failed to reset folder organization' 
         });
     }
 });
