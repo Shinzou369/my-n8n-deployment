@@ -130,29 +130,54 @@ class N8NWorkflowDuplicator {
         // Create a copy of the template
         const workflow = JSON.parse(JSON.stringify(template));
         
-        // Remove ID to create new workflow
+        // Remove properties that N8N API doesn't accept for new workflows
         delete workflow.id;
         delete workflow.versionId;
+        delete workflow.createdAt;
+        delete workflow.updatedAt;
+        delete workflow.meta;
+        delete workflow.triggerCount;
+        delete workflow.shared;
+        delete workflow.isArchived;
         
         // Update workflow name
         const suffix = options.nameSuffix || clientData.name;
         workflow.name = `${template.name} - ${suffix}`;
         
-        // Update creation metadata
-        workflow.createdAt = new Date().toISOString();
-        workflow.updatedAt = new Date().toISOString();
+        // Ensure only the required properties for N8N API
+        const cleanWorkflow = {
+            name: workflow.name,
+            nodes: workflow.nodes || [],
+            connections: workflow.connections || {},
+            settings: workflow.settings || {}
+        };
+        
+        // Add optional properties only if they exist and have content
+        if (workflow.staticData && Object.keys(workflow.staticData).length > 0) {
+            cleanWorkflow.staticData = workflow.staticData;
+        }
+        if (workflow.pinData && Object.keys(workflow.pinData).length > 0) {
+            cleanWorkflow.pinData = workflow.pinData;
+        }
+        
+        // Return the clean workflow object
+        workflow = cleanWorkflow;
         
         // Personalize nodes
         if (workflow.nodes) {
             workflow.nodes = workflow.nodes.map(node => this.personalizeNode(node, clientData));
         }
         
-        // Add client tag
-        workflow.tags = workflow.tags || [];
-        workflow.tags.push({
-            id: `client-${clientData.name.toLowerCase().replace(/\s+/g, '-')}`,
-            name: `client:${clientData.name}`
-        });
+        // Add client tag (if tags exist)
+        if (workflow.tags) {
+            workflow.tags.push({
+                id: `client-${clientData.name.toLowerCase().replace(/\s+/g, '-')}`,
+                name: `client:${clientData.name}`
+            });
+        } else {
+            // N8N might not accept tags in workflow creation, so we'll add them later
+            workflow.tags = [];
+        }
         
         return workflow;
     }
