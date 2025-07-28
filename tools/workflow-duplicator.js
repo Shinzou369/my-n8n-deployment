@@ -13,11 +13,11 @@ class N8NWorkflowDuplicator {
     constructor(config) {
         this.baseURL = config.baseURL || process.env.N8N_BASE_URL;
         this.apiKey = config.apiKey || process.env.N8N_API_KEY;
-        
+
         if (!this.baseURL || !this.apiKey) {
             throw new Error('N8N_BASE_URL and N8N_API_KEY must be provided');
         }
-        
+
         this.client = axios.create({
             baseURL: `${this.baseURL}/api/v1`,
             headers: {
@@ -86,24 +86,24 @@ class N8NWorkflowDuplicator {
     async duplicateWorkflow(templateId, clientData, options = {}) {
         try {
             console.log(`🔄 Duplicating workflow ${templateId} for client: ${clientData.name}`);
-            
+
             // 1. Get template workflow
             const template = await this.getWorkflow(templateId);
             console.log(`📋 Retrieved template: ${template.name}`);
-            
+
             // 2. Personalize workflow
             const personalizedWorkflow = this.personalizeWorkflow(template, clientData, options);
-            
+
             // 3. Create new workflow
             const newWorkflow = await this.createWorkflow(personalizedWorkflow);
             console.log(`✅ Created new workflow: ${newWorkflow.name} (ID: ${newWorkflow.id})`);
-            
+
             // 4. Activate if requested
             if (options.activate !== false) {
                 await this.activateWorkflow(newWorkflow.id);
                 console.log(`🚀 Activated workflow: ${newWorkflow.id}`);
             }
-            
+
             return {
                 templateId,
                 newWorkflowId: newWorkflow.id,
@@ -111,7 +111,7 @@ class N8NWorkflowDuplicator {
                 clientName: clientData.name,
                 success: true
             };
-            
+
         } catch (error) {
             console.error('❌ Duplication failed:', error.message);
             return {
@@ -129,11 +129,11 @@ class N8NWorkflowDuplicator {
     personalizeWorkflow(template, clientData, options = {}) {
         // Create a copy of the template
         let workflowData = JSON.parse(JSON.stringify(template));
-        
+
         // Update workflow name first
         const suffix = options.nameSuffix || clientData.name;
         const newName = `${template.name} - ${suffix}`;
-        
+
         // Create clean workflow object with only required properties
         const cleanWorkflow = {
             name: newName,
@@ -141,7 +141,7 @@ class N8NWorkflowDuplicator {
             connections: workflowData.connections || {},
             settings: workflowData.settings || {}
         };
-        
+
         // Add optional properties only if they exist and have content
         if (workflowData.staticData && Object.keys(workflowData.staticData).length > 0) {
             cleanWorkflow.staticData = workflowData.staticData;
@@ -149,12 +149,12 @@ class N8NWorkflowDuplicator {
         if (workflowData.pinData && Object.keys(workflowData.pinData).length > 0) {
             cleanWorkflow.pinData = workflowData.pinData;
         }
-        
+
         // Personalize nodes if they exist
         if (cleanWorkflow.nodes && cleanWorkflow.nodes.length > 0) {
             cleanWorkflow.nodes = cleanWorkflow.nodes.map(node => this.personalizeNode(node, clientData));
         }
-        
+
         return cleanWorkflow;
     }
 
@@ -163,7 +163,7 @@ class N8NWorkflowDuplicator {
      */
     personalizeNode(node, clientData) {
         const personalizedNode = JSON.parse(JSON.stringify(node));
-        
+
         // Define substitution mappings
         const substitutions = {
             '{{CLIENT_NAME}}': clientData.name,
@@ -178,10 +178,10 @@ class N8NWorkflowDuplicator {
             // Add more mappings as needed
             ...clientData.customFields
         };
-        
+
         // Apply substitutions recursively
         personalizedNode.parameters = this.applySubstitutions(personalizedNode.parameters, substitutions);
-        
+
         return personalizedNode;
     }
 
@@ -220,6 +220,42 @@ class N8NWorkflowDuplicator {
         );
     }
 
+    determineWorkflowFolder(workflowName) {
+        // Simple logic to categorize workflows
+        if (workflowName.includes('_TEMPLATE') || workflowName.includes('Template')) {
+            return 'Templates';
+        }
+
+        if (workflowName.includes('PET CLINIC') || workflowName.includes('Pet Clinic')) {
+            return 'Templates/Pet Clinic Templates';
+        }
+
+        return 'Uncategorized';
+    }
+
+    determineFolderTags(workflowName, clientData) {
+        const tags = [];
+
+        // Determine category tag
+        if (workflowName.includes('_TEMPLATE') || workflowName.includes('Template')) {
+            tags.push('template');
+        } else {
+            tags.push('client-workflow');
+        }
+
+        // Determine business type tag
+        if (workflowName.includes('PET CLINIC') || workflowName.includes('Pet Clinic')) {
+            tags.push('pet-clinic');
+        }
+
+        // Add client-specific tag if it's a client workflow
+        if (clientData && !workflowName.includes('Template')) {
+            tags.push(`client:${clientData.name.toLowerCase().replace(/\s+/g, '-')}`);
+        }
+
+        return tags;
+    }
+
     /**
      * Duplicate entire folder of workflows for ETF (multiple workflow setup)
      * @param {string} folderPath - Virtual folder path containing template workflows
@@ -229,31 +265,31 @@ class N8NWorkflowDuplicator {
      */
     async duplicateWorkflowFolder(folderPath, clientData, options = {}) {
         console.log(`🗂️ Duplicating folder: ${folderPath} for client: ${clientData.name}`);
-        
+
         try {
             // Get all workflows from the folder (this would need folder manager integration)
             const allWorkflows = await this.getWorkflows();
-            
+
             // For now, simulate folder-based selection by workflow naming pattern
             // In a real implementation, this would use the FolderManager
             let folderWorkflows = [];
-            
+
             if (folderPath.includes('PET CLINIC')) {
                 folderWorkflows = allWorkflows.filter(w => 
                     w.name.includes('PET CLINIC') && 
                     !w.name.includes(' - ') && // Exclude client instances
                     w.name !== 'PET CLINIC' // Exclude the main template for now
                 );
-                
+
                 // Always include the main PET CLINIC template
                 const mainTemplate = allWorkflows.find(w => w.name === 'PET CLINIC');
                 if (mainTemplate) {
                     folderWorkflows.unshift(mainTemplate);
                 }
             }
-            
+
             console.log(`📋 Found ${folderWorkflows.length} workflows in folder`);
-            
+
             const results = {
                 success: true,
                 folderPath,
@@ -261,12 +297,12 @@ class N8NWorkflowDuplicator {
                 createdWorkflows: [],
                 errors: []
             };
-            
+
             // Duplicate each workflow in the folder
             for (const template of folderWorkflows) {
                 try {
                     console.log(`🔄 Duplicating: ${template.name}`);
-                    
+
                     const workflowResult = await this.duplicateWorkflow(
                         template.id, 
                         clientData, 
@@ -275,7 +311,7 @@ class N8NWorkflowDuplicator {
                             nameSuffix: clientData.name
                         }
                     );
-                    
+
                     if (workflowResult.success) {
                         results.createdWorkflows.push({
                             originalId: template.id,
@@ -291,10 +327,10 @@ class N8NWorkflowDuplicator {
                             error: workflowResult.error
                         });
                     }
-                    
+
                     // Small delay between duplications to avoid overwhelming N8N
                     await new Promise(resolve => setTimeout(resolve, 500));
-                    
+
                 } catch (error) {
                     console.error(`❌ Failed to duplicate ${template.name}:`, error.message);
                     results.errors.push({
@@ -303,14 +339,14 @@ class N8NWorkflowDuplicator {
                     });
                 }
             }
-            
+
             // Determine overall success
             results.success = results.createdWorkflows.length > 0;
             results.summary = `Created ${results.createdWorkflows.length} workflows with ${results.errors.length} errors`;
-            
+
             console.log(`📊 Folder duplication complete: ${results.summary}`);
             return results;
-            
+
         } catch (error) {
             console.error('❌ Folder duplication failed:', error.message);
             return {
@@ -331,7 +367,7 @@ class N8NWorkflowDuplicator {
         try {
             const workflow = await this.getWorkflow(workflowId);
             const filename = `${outputPath}/${workflow.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`;
-            
+
             fs.writeFileSync(filename, JSON.stringify(workflow, null, 2));
             console.log(`📄 Exported workflow to: ${filename}`);
             return filename;
@@ -347,19 +383,19 @@ class N8NWorkflowDuplicator {
     async importWorkflow(jsonPath, activate = false) {
         try {
             const workflowData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-            
+
             // Remove ID to create new workflow
             delete workflowData.id;
             delete workflowData.versionId;
-            
+
             const newWorkflow = await this.createWorkflow(workflowData);
             console.log(`📥 Imported workflow: ${newWorkflow.name}`);
-            
+
             if (activate) {
                 await this.activateWorkflow(newWorkflow.id);
                 console.log(`🚀 Activated imported workflow`);
             }
-            
+
             return newWorkflow;
         } catch (error) {
             console.error('Import failed:', error.message);
@@ -395,15 +431,15 @@ if (require.main === module) {
             // List available templates
             console.log('🔍 Finding template workflows...');
             const templates = await duplicator.getTemplateWorkflows();
-            
+
             if (templates.length === 0) {
                 console.log('No template workflows found. Create workflows ending with _TEMPLATE first.');
                 return;
             }
-            
+
             console.log('Available templates:');
             templates.forEach(t => console.log(`- ${t.name} (ID: ${t.id})`));
-            
+
             // Duplicate the first template
             if (templates.length > 0) {
                 const result = await duplicator.duplicateWorkflow(
@@ -411,10 +447,10 @@ if (require.main === module) {
                     exampleClient,
                     { activate: true }
                 );
-                
+
                 console.log('\n🎉 Duplication Result:', result);
             }
-            
+
         } catch (error) {
             console.error('❌ Script failed:', error.message);
             process.exit(1);
