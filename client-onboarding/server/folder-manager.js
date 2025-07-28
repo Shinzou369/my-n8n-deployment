@@ -30,8 +30,8 @@ class N8NFolderManager {
     return this.folders.get(folderPath);
   }
 
-  // Assign workflow to folder
-  assignWorkflowToFolder(workflowId, folderPath) {
+  // Assign workflow to folder and update N8N tags
+  async assignWorkflowToFolder(workflowId, folderPath) {
     // Create folder if it doesn't exist
     this.createFolder(folderPath);
     
@@ -49,7 +49,63 @@ class N8NFolderManager {
     }
     
     this.workflowFolders.set(workflowId, folderPath);
+    
+    // Update N8N workflow tags for folder organization
+    await this.updateWorkflowTags(workflowId, folderPath);
+    
     console.log(`📁 Assigned workflow ${workflowId} to folder: ${folderPath}`);
+  }
+
+  // Update workflow tags in N8N for folder organization
+  async updateWorkflowTags(workflowId, folderPath) {
+    try {
+      // Get current workflow
+      const workflow = await axios.get(`${this.baseUrl}/api/v1/workflows/${workflowId}`, {
+        headers: { 'X-N8N-API-KEY': this.apiKey }
+      });
+
+      const workflowData = workflow.data;
+
+      // Generate folder tags
+      const folderTags = this.generateFolderTags(folderPath);
+      
+      // Update workflow with tags
+      const updateData = {
+        tags: folderTags.map(tag => ({ name: tag }))
+      };
+
+      await axios.patch(`${this.baseUrl}/api/v1/workflows/${workflowId}`, updateData, {
+        headers: { 'X-N8N-API-KEY': this.apiKey }
+      });
+
+      console.log(`🏷️ Updated tags for workflow ${workflowId}: ${folderTags.join(', ')}`);
+    } catch (error) {
+      console.error(`⚠️ Failed to update tags for workflow ${workflowId}:`, error.message);
+    }
+  }
+
+  // Generate N8N tags from folder path
+  generateFolderTags(folderPath) {
+    const tags = [];
+    const parts = folderPath.split('/');
+
+    // Add hierarchical tags with emojis for visual organization
+    if (parts[0] === 'Templates') {
+      tags.push('📁 Templates');
+      if (parts[1]) {
+        tags.push(`📄 ${parts[1]}`);
+      }
+    } else if (parts[0] === 'Clients') {
+      tags.push('👥 Client Workflows');
+      if (parts[1]) {
+        tags.push(`👤 ${parts[1]}`);
+      }
+    }
+
+    // Add full path as a tag for complete organization
+    tags.push(`📂 ${folderPath}`);
+
+    return tags;
   }
 
   // Move workflow to a different folder (for UI operations)

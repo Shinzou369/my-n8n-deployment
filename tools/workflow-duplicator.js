@@ -134,12 +134,16 @@ class N8NWorkflowDuplicator {
         const suffix = options.nameSuffix || clientData.name;
         const newName = `${template.name} - ${suffix}`;
 
+        // Determine folder tags for N8N organization
+        const folderTags = this.determineFolderTags(newName, clientData);
+
         // Create clean workflow object with only required properties
         const cleanWorkflow = {
             name: newName,
             nodes: workflowData.nodes || [],
             connections: workflowData.connections || {},
-            settings: workflowData.settings || {}
+            settings: workflowData.settings || {},
+            tags: folderTags.map(tag => ({ name: tag }))
         };
 
         // Add optional properties only if they exist and have content
@@ -236,21 +240,26 @@ class N8NWorkflowDuplicator {
     determineFolderTags(workflowName, clientData) {
         const tags = [];
 
-        // Determine category tag
+        // Main folder structure using folder-like tags
         if (workflowName.includes('_TEMPLATE') || workflowName.includes('Template')) {
-            tags.push('template');
+            tags.push('📁 Templates');
+            if (workflowName.includes('PET CLINIC') || workflowName.includes('Pet Clinic')) {
+                tags.push('🐾 Pet Clinic Templates');
+            } else {
+                tags.push('📄 General Templates');
+            }
         } else {
-            tags.push('client-workflow');
-        }
-
-        // Determine business type tag
-        if (workflowName.includes('PET CLINIC') || workflowName.includes('Pet Clinic')) {
-            tags.push('pet-clinic');
-        }
-
-        // Add client-specific tag if it's a client workflow
-        if (clientData && !workflowName.includes('Template')) {
-            tags.push(`client:${clientData.name.toLowerCase().replace(/\s+/g, '-')}`);
+            tags.push('👥 Client Workflows');
+            if (workflowName.includes('PET CLINIC') || workflowName.includes('Pet Clinic')) {
+                tags.push('🐾 Pet Clinic Clients');
+            } else {
+                tags.push('👤 General Clients');
+            }
+            
+            // Add client-specific tag
+            if (clientData) {
+                tags.push(`📊 ${clientData.name}`);
+            }
         }
 
         return tags;
